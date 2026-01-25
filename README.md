@@ -1,53 +1,117 @@
-# Getting Started with Create React App
+# YAGNEXOR - Multi-SaaS Educational Management Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive, enterprise-grade educational management system built with modern web technologies supporting multiple institutions through a solid multi-tenant architecture.
 
-## Available Scripts
+**Status:** ✅ Production Ready | **Backend:** Running on 3000 | **Frontend:** Running on 5173
 
-In the project directory, you can run:
+## 📚 Documentation Guide
 
-### `npm start`
+**Start here based on your needs:**
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| Document | Purpose | Time | Audience |
+|----------|---------|------|----------|
+| [QUICK_START.md](./QUICK_START.md) | Quick reference & how to run | 5-10 min | Everyone |
+| [PAGES_CREATED.md](./PAGES_CREATED.md) | Detailed page documentation | 20-30 min | Developers |
+| [PAGES_REFERENCE.md](./PAGES_REFERENCE.md) | Code patterns & examples | 15-20 min | Developers |
+| [PROJECT_COMPLETION.md](./PROJECT_COMPLETION.md) | Complete project details | 25-30 min | Project Managers |
+| [DELIVERY_SUMMARY.md](./DELIVERY_SUMMARY.md) | What's been delivered | 10-15 min | Stakeholders |
+| [BUG_FIXES.md](./BUG_FIXES.md) | Form validation improvements | 10 min | Developers |
+| [TESTING_GUIDE.md](./TESTING_GUIDE.md) | How to test features | 15 min | QA/Testers |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+**Choose by role:**
+- 👨‍💻 **Developer?** → [QUICK_START.md](./QUICK_START.md) then [PAGES_REFERENCE.md](./PAGES_REFERENCE.md)
+- 📋 **Tester?** → [TESTING_GUIDE.md](./TESTING_GUIDE.md)
+- 👔 **Manager?** → [PROJECT_COMPLETION.md](./PROJECT_COMPLETION.md)
+- 🚀 **DevOps?** → [QUICK_START.md](./QUICK_START.md) then backend docs
 
-### `npm test`
+---
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🚀 Quick Start (2 minutes)
 
-### `npm run build`
+```bash
+cd /Users/shafi/myproj/yagnexor
+npm start
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Then visit: http://localhost:5173
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 🎯 Key Features
 
-### `npm run eject`
+### Core Platform
+- **Multi-Tenant Architecture** - Support unlimited institutions with complete data isolation
+- **Authentication & Authorization** - JWT-based authentication with role-based access control (RBAC)
+- **API Guard** - Rate limiting, request validation, and security middleware
+- **Tenant Isolation** - Database-level isolation ensuring data privacy
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Education Domain
+- **Student Management** - Enrollment, profiles, status tracking
+- **Faculty Management** - Staff records, departments, qualifications
+- **Attendance Tracking** - Real-time attendance marking with analytics
+- **Exam Management** - Exam scheduling, result recording, grade publishing
+- **Fee Management** - Fee structure, payment tracking, financial reports
+- **LMS Integration** - Course materials and learning resources
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### User Management
+- **Super Admin** - Create institutions and users, manage all tenants
+- **Tenant Admin** - Manage users and roles within institution
+- **Role-Based Access** - Flexible permission system with resource:action matrix
+- **Multi-Role Support** - Super Admin, Tenant Admin, Principal, HOD, Faculty, Student
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🚀 Quick Start
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Prerequisites
+- Docker & Docker Compose
+- Or Node.js 20+, MySQL 8.0+
 
-## Learn More
+### Using Docker Compose (Recommended)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+cd /Users/shafi/myproj/yagnexor
+docker-compose up -d
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Services will start on:
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:3000
+- **MySQL:** localhost:3306
 
-### Code Splitting
+### First Use
+1. Open http://localhost:5173 in your browser
+2. Click "Register" to create a new institution
+3. Create admin user credentials
+4. Login and start managing your institution
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 📚 Documentation
+
+- [SETUP_GUIDE.md](./SETUP_GUIDE.md) - Detailed installation and deployment
+- [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Complete feature documentation
+- [API_TESTING_GUIDE.md](./API_TESTING_GUIDE.md) - API endpoints and testing examples
+- [EDUCATION_DOMAIN_FEATURES.md](./EDUCATION_DOMAIN_FEATURES.md) - Education feature details
+
+## 🏗️ Architecture
+
+### Backend Stack
+- **Framework:** Express.js 4.18+
+- **Database:** MySQL 8.0
+- **Authentication:** JWT (jsonwebtoken 9.1.2)
+- **Validation:** Joi 17.11.0
+- **Security:** Helmet 7.1.0, bcryptjs 2.4.3
+- **Rate Limiting:** express-rate-limit 7.1.5
+
+### Frontend Stack
+- **Framework:** React 18.2.0
+- **Build Tool:** Vite 5.0.8
+- **Styling:** Tailwind CSS 3.4.1
+- **State Management:** Zustand 4.4.2
+- **HTTP Client:** Axios 1.6.2
+- **Routing:** React Router DOM 6.20.1
+
+### Deployment
+- **Containerization:** Docker
+- **Orchestration:** Docker Compose
+- **Database Persistence:** MySQL volumes
 
 ### Analyzing the Bundle Size
 

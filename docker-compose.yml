@@ -1,0 +1,75 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: yagnexor-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: yagnexor
+      MYSQL_USER: yagnexor_user
+      MYSQL_PASSWORD: yagnexor_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - yagnexor_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yagnexor-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: yagnexor_user
+      DB_PASSWORD: yagnexor_pass
+      DB_NAME: yagnexor
+      JWT_SECRET: your_jwt_secret_key_change_in_production
+      JWT_REFRESH_SECRET: your_jwt_refresh_secret_change_in_production
+      JWT_EXPIRY: 15m
+      REFRESH_TOKEN_EXPIRY: 7d
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - yagnexor_network
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: yagnexor-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - yagnexor_network
+    command: npm run dev
+
+volumes:
+  mysql_data:
+
+networks:
+  yagnexor_network:
+    driver: bridge
