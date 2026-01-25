@@ -16,6 +16,7 @@ import FeesPage from './pages/FeesPage';
 import UsersPage from './pages/UsersPage';
 import RolesPage from './pages/RolesPage';
 import ClassesPage from './pages/ClassesPage';
+import TenantsPage from './pages/TenantsPage';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -108,6 +109,14 @@ function App() {
           element={
             <PrivateRoute>
               <ClassesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/tenants"
+          element={
+            <PrivateRoute>
+              <TenantsPage />
             </PrivateRoute>
           }
         />

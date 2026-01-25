@@ -16,6 +16,7 @@ import examRoutes from './domains/education/exam-routes.js';
 import feeRoutes from './domains/education/fee-routes.js';
 import classRoutes from './domains/education/class-routes.js';
 import academicYearRoutes from './domains/education/academic-year-routes.js';
+import tenantRoutes from './domains/admin/tenant-routes.js';
 
 dotenv.config();
 
@@ -48,6 +49,9 @@ app.use('/api/exams', authMiddleware, tenantScopeMiddleware, examRoutes);
 app.use('/api/fees', authMiddleware, tenantScopeMiddleware, feeRoutes);
 app.use('/api/classes', authMiddleware, tenantScopeMiddleware, classRoutes);
 app.use('/api/academic-years', authMiddleware, tenantScopeMiddleware, academicYearRoutes);
+
+// Super Admin routes (no tenant scope)
+app.use('/api/tenants', authMiddleware, tenantRoutes);
 
 // Error handling
 app.use(errorHandler);

@@ -221,10 +221,38 @@ router.post('/faculty-register', validateRequest(facultyRegisterSchema), async (
 
     // Create faculty record
     const facultyId = uuidv4();
+    let departmentId = null;
+    
+    // Handle department - either find existing or create new one
+    if (department) {
+      console.log('Processing department:', department);
+      // Try to find existing department by name
+      const [existingDepts] = await db.query(
+        'SELECT id FROM departments WHERE tenant_id = ? AND name = ?',
+        [tenant.id, department]
+      );
+      
+      if (existingDepts.length > 0) {
+        departmentId = existingDepts[0].id;
+        console.log('Found existing department:', departmentId);
+      } else {
+        // Create new department
+        const newDeptId = uuidv4();
+        await db.query(
+          'INSERT INTO departments (id, tenant_id, name) VALUES (?, ?, ?)',
+          [newDeptId, tenant.id, department]
+        );
+        departmentId = newDeptId;
+        console.log('Created new department:', departmentId);
+      }
+    }
+    
+    console.log('Final departmentId:', departmentId);
+    
     await db.query(
       `INSERT INTO faculty (id, tenant_id, user_id, department_id, specialization, phone, employment_status)
        VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-      [facultyId, tenant.id, facultyUser.id, department || null, specialization || null, phone || null]
+      [facultyId, tenant.id, facultyUser.id, departmentId, specialization || null, phone || null]
     );
 
     // Generate tokens
