@@ -47,8 +47,8 @@ export async function createUser(userData) {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     const query = `
-      INSERT INTO users (id, tenant_id, email, password, first_name, last_name, role, is_active, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())
+      INSERT INTO users (id, tenant_id, email, password, first_name, last_name, phone, role, is_active, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
     const params = [
@@ -58,7 +58,9 @@ export async function createUser(userData) {
       hashedPassword,
       userData.first_name || '',
       userData.last_name || '',
+      userData.phone || null,
       userData.role || 'student',
+      userData.is_active !== undefined ? userData.is_active : 1,
     ];
 
     await db.query(query, params);
@@ -124,7 +126,7 @@ export async function getTenantUsers(tenantId) {
   const db = getDatabase();
   try {
     const [rows] = await db.query(
-      'SELECT id, email, first_name, last_name, role, is_active, created_at FROM users WHERE tenant_id = ?',
+      'SELECT id, email, first_name, last_name, phone, role, is_active, created_at FROM users WHERE tenant_id = ?',
       [tenantId]
     );
     return rows;

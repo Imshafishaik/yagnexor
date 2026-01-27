@@ -14,6 +14,7 @@ const createUserSchema = Joi.object({
   last_name: Joi.string().required(),
   role: Joi.string().required(),
   phone: Joi.string().optional(),
+  is_active: Joi.boolean().optional(),
 });
 
 const updateUserSchema = Joi.object({
@@ -25,7 +26,7 @@ const updateUserSchema = Joi.object({
 });
 
 // List users
-router.get('/', requireRole('super_admin', 'tenant_admin'), async (req, res) => {
+router.get('/', requireRole('super_admin', 'tenant_admin', 'manager'), async (req, res) => {
   try {
     const users = await getTenantUsers(req.tenantId);
     res.json({ users });
@@ -36,7 +37,7 @@ router.get('/', requireRole('super_admin', 'tenant_admin'), async (req, res) => 
 });
 
 // Create user
-router.post('/', requireRole('super_admin', 'tenant_admin'), validateRequest(createUserSchema), async (req, res) => {
+router.post('/', requireRole('super_admin', 'tenant_admin', 'manager'), validateRequest(createUserSchema), async (req, res) => {
   try {
     const user = await createUser({
       tenant_id: req.tenantId,
@@ -124,7 +125,7 @@ router.put('/:user_id', validateRequest(updateUserSchema), async (req, res) => {
 });
 
 // Update user role
-router.put('/:user_id/role', requireRole('super_admin', 'tenant_admin'), async (req, res) => {
+router.put('/:user_id/role', requireRole('super_admin', 'tenant_admin', 'manager'), async (req, res) => {
   const { role } = req.body;
   try {
     await updateUserRole(req.params.user_id, req.tenantId, role);
@@ -136,7 +137,7 @@ router.put('/:user_id/role', requireRole('super_admin', 'tenant_admin'), async (
 });
 
 // Deactivate user
-router.delete('/:user_id', requireRole('super_admin', 'tenant_admin'), async (req, res) => {
+router.delete('/:user_id', requireRole('super_admin', 'tenant_admin', 'manager'), async (req, res) => {
   try {
     await deactivateUser(req.params.user_id, req.tenantId);
     res.json({ message: 'User deactivated successfully' });

@@ -2,11 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
-import { Users, BookOpen, LogOut, Users2, BarChart3, FileText, DollarSign } from 'lucide-react';
+import { Users, BookOpen, LogOut, Users2, BarChart3, FileText, DollarSign, GraduationCap, Library, Building } from 'lucide-react';
 
 export default function DashboardPage() {
+  console.log("DashboardPage component rendering...");
+  console.log(".......working fine");
+  
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  console.log(".......user",user);
+  console.log(".......user?.role",user?.role);
+  
   const [stats, setStats] = useState({
     students: 0,
     faculty: 0,
@@ -16,10 +22,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("DashboardPage useEffect - user:", user);
     if (!user) {
+      console.log("No user found, redirecting to login");
       navigate('/login');
       return;
     }
+
+    console.log("User found with role:", user.role);
 
     const fetchStats = async () => {
       try {
@@ -57,6 +67,15 @@ export default function DashboardPage() {
     { name: 'Fees', icon: DollarSign, color: 'bg-indigo-50 text-indigo-600', path: '/fees' },
     { name: 'Users', icon: Users2, color: 'bg-pink-50 text-pink-600', path: '/users' },
   ];
+  console.log("........user?.role",user?.role);
+  
+  // Add manager-specific modules if user is a manager
+  const allModules = user?.role === 'manager' ? [
+    ...modules,
+    { name: 'Class Management', icon: GraduationCap, color: 'bg-purple-50 text-purple-600', path: '/manager/classes' },
+    { name: 'Course Management', icon: Library, color: 'bg-indigo-50 text-indigo-600', path: '/manager/courses' },
+    { name: 'Department Management', icon: Building, color: 'bg-orange-50 text-orange-600', path: '/manager/departments' },
+  ] : modules;
 
   const handleModuleClick = (path) => {
     if (path !== '#') {
@@ -139,7 +158,7 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-6">Modules</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {modules.map((module) => {
+                {allModules.map((module) => {
                   const Icon = module.icon;
                   return (
                     <div

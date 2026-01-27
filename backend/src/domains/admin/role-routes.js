@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create role
-router.post('/', requireRole('super_admin', 'tenant_admin'), async (req, res) => {
+router.post('/', requireRole('super_admin', 'tenant_admin', 'manager'), async (req, res) => {
   const { name, description } = req.body;
   try {
     const roleId = await createRole(req.tenantId, name, description);

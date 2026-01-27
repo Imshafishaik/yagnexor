@@ -1,7 +1,10 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import api from '../services/api';
 
-export const useAuthStore = create((set) => ({
+export const useAuthStore = create(
+  persist(
+    (set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
@@ -10,18 +13,22 @@ export const useAuthStore = create((set) => ({
   login: async (tenantDomain, email, password) => {
     set({ isLoading: true, error: null });
     try {
+      console.log("Login attempt - tenantDomain:", tenantDomain, "email:", email);
       const response = await api.post('/auth/login', {
         tenant_domain: tenantDomain,
         email,
         password,
       });
 
+      console.log("Login response:", response.data);
       const { access_token, refresh_token, user } = response.data;
 
+      console.log("Storing user data:", user);
+      // Store tokens in localStorage (Zustand persist will handle user state)
       localStorage.setItem('access_token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
-      localStorage.setItem('user', JSON.stringify(user));
 
+      console.log("Setting auth state with user:", user);
       set({
         user,
         isAuthenticated: true,
@@ -30,6 +37,7 @@ export const useAuthStore = create((set) => ({
 
       return user;
     } catch (error) {
+      console.error("Login error:", error);
       const errorMessage = error.response?.data?.error || 'Login failed';
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -149,7 +157,7 @@ export const useAuthStore = create((set) => ({
   logout: () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    // Zustand persist will automatically clear the persisted state when we set user to null
     set({
       user: null,
       isAuthenticated: false,
@@ -158,13 +166,75 @@ export const useAuthStore = create((set) => ({
 
   checkAuth: () => {
     const token = localStorage.getItem('access_token');
-    const user = localStorage.getItem('user');
 
-    if (token && user) {
+    console.log("checkAuth - token:", token);
+
+    if (token) {
+      // If we have a token, check if we have persisted user state
+      const currentState = useAuthStore.getState();
+      console.log("checkAuth - current state user:", currentState.user);
+      console.log("checkAuth - current state isAuthenticated:", currentState.isAuthenticated);
+      
+      if (currentState.user && currentState.isAuthenticated) {
+        console.log("checkAuth - using persisted user state");
+        return currentState.user;
+      }
+      
+      // If we have token but no user state, try to restore from localStorage (fallback)
+      const user = localStorage.getItem('user');
+      if (user) {
+        try {
+          const parsedUser = JSON.parse(user);
+          console.log("checkAuth - restored user from localStorage:", parsedUser);
+          set({
+            user: parsedUser,
+            isAuthenticated: true,
+          });
+          return parsedUser;
+        } catch (error) {
+          console.error("Error parsing user from localStorage:", error);
+        }
+      }
+    } else {
+      console.log("No token found in localStorage");
       set({
-        user: JSON.parse(user),
-        isAuthenticated: true,
+        user: null,
+        isAuthenticated: false,
       });
     }
+    return null;
   },
-}));
+
+  refreshToken: async () => {
+    const refresh_token = localStorage.getItem('refresh_token');
+    if (!refresh_token) {
+      console.log('No refresh token available');
+      return false;
+    }
+
+    try {
+      console.log('Proactively refreshing token...');
+      const response = await api.post('/auth/refresh', { refresh_token });
+      const { access_token } = response.data;
+      
+      localStorage.setItem('access_token', access_token);
+      console.log('Proactive token refresh successful');
+      return true;
+    } catch (error) {
+      console.error('Proactive token refresh failed:', error);
+      // If refresh fails, logout the user
+      useAuthStore.getState().logout();
+      return false;
+    }
+  },
+}),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+);

@@ -15,6 +15,7 @@ export default function UsersPage() {
     first_name: '',
     last_name: '',
     role: '',
+    phone: '',
     is_active: true,
   });
 
@@ -69,6 +70,7 @@ export default function UsersPage() {
         first_name: '',
         last_name: '',
         role: '',
+        phone: '',
         is_active: true,
       });
     } catch (error) {
@@ -85,6 +87,7 @@ export default function UsersPage() {
       first_name: user.first_name,
       last_name: user.last_name,
       role: user.role,
+      phone: user.phone || '',
       is_active: user.is_active,
     });
     setShowUserForm(true);
@@ -111,8 +114,8 @@ export default function UsersPage() {
       first_name: '',
       last_name: '',
       phone: '',
-      role_id: '',
-      status: 'ACTIVE',
+      role: '',
+      is_active: true,
     });
   };
 
@@ -137,8 +140,8 @@ export default function UsersPage() {
                 first_name: '',
                 last_name: '',
                 phone: '',
-                role_id: '',
-                status: 'ACTIVE',
+                role: '',
+                is_active: true,
               });
               setShowUserForm(true);
             }}
@@ -251,6 +254,15 @@ export default function UsersPage() {
                     name="last_name"
                     placeholder="Last Name"
                     value={userForm.last_name}
+                    onChange={handleInputChange}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="Phone Number"
+                    value={userForm.phone}
                     onChange={handleInputChange}
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
