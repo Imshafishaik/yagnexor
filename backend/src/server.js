@@ -13,6 +13,7 @@ import departmentRoutes from './domains/admin/department-routes.js';
 import studentRoutes from './domains/education/student-routes.js';
 import facultyRoutes from './domains/education/faculty-routes.js';
 import courseRoutes from './domains/education/course-routes.js';
+import subjectRoutes from './domains/education/subject-routes.js';
 import attendanceRoutes from './domains/education/attendance-routes.js';
 import examRoutes from './domains/education/exam-routes.js';
 import feeRoutes from './domains/education/fee-routes.js';
@@ -49,6 +50,7 @@ app.use('/api/departments', authMiddleware, tenantScopeMiddleware, departmentRou
 app.use('/api/students', authMiddleware, tenantScopeMiddleware, studentRoutes);
 app.use('/api/faculty', authMiddleware, tenantScopeMiddleware, facultyRoutes);
 app.use('/api/courses', authMiddleware, tenantScopeMiddleware, courseRoutes);
+app.use('/api/subjects', authMiddleware, tenantScopeMiddleware, subjectRoutes);
 app.use('/api/attendance', authMiddleware, tenantScopeMiddleware, attendanceRoutes);
 app.use('/api/exams', authMiddleware, tenantScopeMiddleware, examRoutes);
 app.use('/api/fees', authMiddleware, tenantScopeMiddleware, feeRoutes);

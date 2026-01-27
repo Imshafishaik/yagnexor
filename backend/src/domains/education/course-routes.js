@@ -33,10 +33,12 @@ router.get('/', async (req, res) => {
     const [courses] = await db.query(`
       SELECT c.*, 
              d.name as department_name,
-             COUNT(cl.id) as class_count
+             COUNT(cl.id) as class_count,
+             COUNT(s.id) as subject_count
       FROM courses c
       LEFT JOIN departments d ON c.department_id = d.id
       LEFT JOIN classes cl ON c.id = cl.course_id AND cl.tenant_id = c.tenant_id
+      LEFT JOIN subjects s ON c.id = s.course_id AND s.tenant_id = c.tenant_id
       WHERE c.tenant_id = ?
       GROUP BY c.id
       ORDER BY c.name
@@ -223,17 +225,106 @@ router.get('/:id/subjects', async (req, res) => {
     }
 
     const [subjects] = await db.query(`
-      SELECT s.*, cs.semester, cs.is_compulsory
+      SELECT s.*, 
+             COUNT(f.id) as faculty_count
       FROM subjects s
-      INNER JOIN course_subjects cs ON s.id = cs.subject_id
-      WHERE cs.course_id = ? AND cs.tenant_id = ?
-      ORDER BY cs.semester, s.name
+      LEFT JOIN faculty_subjects f ON s.id = f.subject_id
+      WHERE s.course_id = ? AND s.tenant_id = ?
+      GROUP BY s.id
+      ORDER BY s.name
     `, [id, req.tenantId]);
     
     res.json({ subjects });
   } catch (error) {
     console.error('Error fetching course subjects:', error);
     res.status(500).json({ error: 'Failed to fetch course subjects' });
+  }
+});
+
+// Create subject for course
+router.post('/:id/subjects', async (req, res) => {
+  const db = getDatabase();
+  const { id } = req.params;
+  const { name, code, description, credits, is_elective } = req.body;
+  
+  try {
+    // Check if course exists
+    const [existingCourse] = await db.query(
+      'SELECT id FROM courses WHERE id = ? AND tenant_id = ?',
+      [id, req.tenantId]
+    );
+    
+    if (existingCourse.length === 0) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    const subjectId = uuidv4();
+    await db.query(
+      `INSERT INTO subjects (id, tenant_id, name, code, description, course_id, credits, is_elective)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [subjectId, req.tenantId, name, code, description || null, id, credits || null, is_elective || false]
+    );
+    
+    res.status(201).json({ 
+      message: 'Subject created successfully', 
+      subject_id: subjectId 
+    });
+  } catch (error) {
+    console.error('Error creating subject:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Subject code already exists' });
+    }
+    res.status(500).json({ error: 'Failed to create subject' });
+  }
+});
+
+// Remove subject from course
+router.delete('/:id/subjects/:subject_id', async (req, res) => {
+  const db = getDatabase();
+  const { id, subject_id } = req.params;
+  
+  try {
+    // Check if course exists
+    const [existingCourse] = await db.query(
+      'SELECT id FROM courses WHERE id = ? AND tenant_id = ?',
+      [id, req.tenantId]
+    );
+    
+    if (existingCourse.length === 0) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    // Check if subject exists and belongs to this course
+    const [existingSubject] = await db.query(
+      'SELECT id FROM subjects WHERE id = ? AND course_id = ? AND tenant_id = ?',
+      [subject_id, id, req.tenantId]
+    );
+    
+    if (existingSubject.length === 0) {
+      return res.status(404).json({ error: 'Subject not found in this course' });
+    }
+
+    // Check if subject has faculty assignments
+    const [facultyAssignments] = await db.query(
+      'SELECT COUNT(*) as count FROM faculty_subjects WHERE subject_id = ?',
+      [subject_id]
+    );
+    
+    if (facultyAssignments[0].count > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot remove subject with assigned faculty' 
+      });
+    }
+
+    await db.query(
+      'DELETE FROM subjects WHERE id = ? AND course_id = ? AND tenant_id = ?',
+      [subject_id, id, req.tenantId]
+    );
+    
+    res.json({ message: 'Subject removed from course successfully' });
+  } catch (error) {
+    console.error('Error removing subject from course:', error);
+    res.status(500).json({ error: 'Failed to remove subject from course' });
   }
 });
 

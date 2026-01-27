@@ -63,19 +63,58 @@ router.get('/:student_id', async (req, res) => {
 // Update student
 router.put('/:student_id', async (req, res) => {
   const db = getDatabase();
-  const { phone, address, status } = req.body;
+  const { user_id, class_id, academic_year_id, roll_number, enrollment_number, date_of_birth, gender, phone, address } = req.body;
+  
   try {
-    await db.query('UPDATE students SET phone = ?, address = ?, status = ? WHERE id = ? AND tenant_id = ?', [
-      phone,
-      address,
-      status,
-      req.params.student_id,
-      req.tenantId,
-    ]);
-    res.json({ message: 'Student updated' });
+    // Check if student exists
+    const [existingStudent] = await db.query(
+      'SELECT id FROM students WHERE id = ? AND tenant_id = ?',
+      [req.params.student_id, req.tenantId]
+    );
+    
+    if (existingStudent.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    // Update student
+    await db.query(
+      `UPDATE students 
+       SET user_id = ?, class_id = ?, academic_year_id = ?, roll_number = ?, enrollment_number = ?, 
+           date_of_birth = ?, gender = ?, phone = ?, address = ?
+       WHERE id = ? AND tenant_id = ?`,
+      [user_id, class_id, academic_year_id, roll_number, enrollment_number, date_of_birth, gender, phone, address, req.params.student_id, req.tenantId]
+    );
+    
+    res.json({ message: 'Student updated successfully' });
   } catch (error) {
     console.error('Error updating student:', error);
     res.status(500).json({ error: 'Failed to update student' });
+  }
+});
+
+// Delete student
+router.delete('/:student_id', async (req, res) => {
+  const db = getDatabase();
+  const { student_id } = req.params;
+
+  try {
+    // Check if student exists
+    const [existingStudent] = await db.query(
+      'SELECT id FROM students WHERE id = ? AND tenant_id = ?',
+      [student_id, req.tenantId]
+    );
+    
+    if (existingStudent.length === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    // Delete student
+    await db.query('DELETE FROM students WHERE id = ? AND tenant_id = ?', [student_id, req.tenantId]);
+    
+    res.json({ message: 'Student deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({ error: 'Failed to delete student' });
   }
 });
 

@@ -117,8 +117,7 @@ router.get('/teacher/classes', async (req, res) => {
     const [classes] = await db.query(
       `SELECT c.id, c.name, c.section, c.academic_year_id 
        FROM classes c 
-       JOIN class_teacher_assignments cta ON c.id = cta.class_id 
-       WHERE cta.teacher_id = ? AND c.tenant_id = ? AND c.status = 'active'`,
+       WHERE c.class_teacher_id = ? AND c.tenant_id = ?`,
       [teacher_id, req.tenantId]
     );
 

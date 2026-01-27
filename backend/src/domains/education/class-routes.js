@@ -232,4 +232,225 @@ router.get('/:id/students', async (req, res) => {
   }
 });
 
+// Get available faculty for assignment
+router.get('/:id/available-faculty', async (req, res) => {
+  const db = getDatabase();
+  const { id } = req.params;
+  
+  try {
+    // Check if class exists
+    const [existingClass] = await db.query(
+      'SELECT id FROM classes WHERE id = ? AND tenant_id = ?',
+      [id, req.tenantId]
+    );
+    
+    if (existingClass.length === 0) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+
+    const [faculty] = await db.query(`
+      SELECT f.*, 
+             u.first_name, u.last_name, u.email,
+             d.name as department_name
+      FROM faculty f
+      LEFT JOIN users u ON f.user_id = u.id
+      LEFT JOIN departments d ON f.department_id = d.id
+      WHERE f.tenant_id = ?
+      ORDER BY u.first_name, u.last_name
+    `, [req.tenantId]);
+    
+    res.json({ faculty });
+  } catch (error) {
+    console.error('Error fetching available faculty:', error);
+    res.status(500).json({ message: 'Failed to fetch available faculty' });
+  }
+});
+
+// Get available students for enrollment
+router.get('/:id/available-students', async (req, res) => {
+  const db = getDatabase();
+  const { id } = req.params;
+  
+  try {
+    // Check if class exists
+    const [existingClass] = await db.query(
+      'SELECT id, capacity FROM classes WHERE id = ? AND tenant_id = ?',
+      [id, req.tenantId]
+    );
+    
+    if (existingClass.length === 0) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+
+    const [students] = await db.query(`
+      SELECT s.*, 
+             u.first_name, u.last_name, u.email
+      FROM students s
+      LEFT JOIN users u ON s.user_id = u.id
+      WHERE s.tenant_id = ? AND (s.class_id IS NULL OR s.class_id = '')
+      ORDER BY u.first_name, u.last_name
+    `, [req.tenantId]);
+    
+    // Get current enrollment count
+    const [enrollmentCount] = await db.query(
+      'SELECT COUNT(*) as count FROM students WHERE class_id = ?',
+      [id]
+    );
+    
+    res.json({ 
+      students,
+      capacity: existingClass[0].capacity,
+      currentEnrollment: enrollmentCount[0].count
+    });
+  } catch (error) {
+    console.error('Error fetching available students:', error);
+    res.status(500).json({ message: 'Failed to fetch available students' });
+  }
+});
+
+// Assign faculty to class
+router.post('/:id/assign-faculty', async (req, res) => {
+  const db = getDatabase();
+  const { id } = req.params;
+  const { faculty_id } = req.body;
+  
+  try {
+    // Check if class exists
+    const [existingClass] = await db.query(
+      'SELECT id FROM classes WHERE id = ? AND tenant_id = ?',
+      [id, req.tenantId]
+    );
+    
+    if (existingClass.length === 0) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+
+    // Check if faculty exists
+    const [existingFaculty] = await db.query(
+      'SELECT id FROM faculty WHERE id = ? AND tenant_id = ?',
+      [faculty_id, req.tenantId]
+    );
+    
+    if (existingFaculty.length === 0) {
+      return res.status(404).json({ message: 'Faculty not found' });
+    }
+
+    // Update class with faculty assignment
+    await db.query(
+      'UPDATE classes SET class_teacher_id = ? WHERE id = ? AND tenant_id = ?',
+      [faculty_id, id, req.tenantId]
+    );
+    
+    res.json({ message: 'Faculty assigned to class successfully' });
+  } catch (error) {
+    console.error('Error assigning faculty to class:', error);
+    res.status(500).json({ message: 'Failed to assign faculty to class' });
+  }
+});
+
+// Enroll students in class
+router.post('/:id/enroll-students', async (req, res) => {
+  const db = getDatabase();
+  const { id } = req.params;
+  const { student_ids } = req.body;
+  
+  try {
+    // Check if class exists and get capacity
+    const [existingClass] = await db.query(
+      'SELECT id, capacity FROM classes WHERE id = ? AND tenant_id = ?',
+      [id, req.tenantId]
+    );
+    
+    if (existingClass.length === 0) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+
+    // Get current enrollment count
+    const [currentEnrollment] = await db.query(
+      'SELECT COUNT(*) as count FROM students WHERE class_id = ?',
+      [id]
+    );
+
+    const availableSlots = existingClass[0].capacity - currentEnrollment[0].count;
+    
+    if (student_ids.length > availableSlots) {
+      return res.status(400).json({ 
+        message: `Cannot enroll ${student_ids.length} students. Only ${availableSlots} slots available.` 
+      });
+    }
+
+    // Enroll students
+    for (const studentId of student_ids) {
+      await db.query(
+        'UPDATE students SET class_id = ? WHERE id = ? AND tenant_id = ?',
+        [id, studentId, req.tenantId]
+      );
+    }
+    
+    res.json({ message: `${student_ids.length} students enrolled successfully` });
+  } catch (error) {
+    console.error('Error enrolling students:', error);
+    res.status(500).json({ message: 'Failed to enroll students' });
+  }
+});
+
+// Remove student from class
+router.delete('/:id/students/:student_id', async (req, res) => {
+  const db = getDatabase();
+  const { id, student_id } = req.params;
+  
+  try {
+    // Check if class exists
+    const [existingClass] = await db.query(
+      'SELECT id FROM classes WHERE id = ? AND tenant_id = ?',
+      [id, req.tenantId]
+    );
+    
+    if (existingClass.length === 0) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+
+    // Remove student from class
+    await db.query(
+      'UPDATE students SET class_id = NULL WHERE id = ? AND class_id = ? AND tenant_id = ?',
+      [student_id, id, req.tenantId]
+    );
+    
+    res.json({ message: 'Student removed from class successfully' });
+  } catch (error) {
+    console.error('Error removing student from class:', error);
+    res.status(500).json({ message: 'Failed to remove student from class' });
+  }
+});
+
+// Get class subjects
+router.get('/:id/subjects', async (req, res) => {
+  const db = getDatabase();
+  const { id } = req.params;
+  
+  try {
+    // Check if class exists
+    const [existingClass] = await db.query(
+      'SELECT id, course_id FROM classes WHERE id = ? AND tenant_id = ?',
+      [id, req.tenantId]
+    );
+    
+    if (existingClass.length === 0) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+
+    const [subjects] = await db.query(`
+      SELECT s.* 
+      FROM subjects s
+      WHERE s.course_id = ? AND s.tenant_id = ?
+      ORDER BY s.name
+    `, [existingClass[0].course_id, req.tenantId]);
+    
+    res.json({ subjects });
+  } catch (error) {
+    console.error('Error fetching class subjects:', error);
+    res.status(500).json({ message: 'Failed to fetch class subjects' });
+  }
+});
+
 export default router;

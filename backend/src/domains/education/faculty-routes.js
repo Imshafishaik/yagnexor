@@ -50,4 +50,63 @@ router.get('/:faculty_id', async (req, res) => {
   }
 });
 
+// Update faculty
+router.put('/:faculty_id', async (req, res) => {
+  const db = getDatabase();
+  const { user_id, department_id, qualification, specialization, phone, office_number, employment_status } = req.body;
+  const { faculty_id } = req.params;
+
+  try {
+    // Check if faculty exists
+    const [existingFaculty] = await db.query(
+      'SELECT id FROM faculty WHERE id = ? AND tenant_id = ?',
+      [faculty_id, req.tenantId]
+    );
+    
+    if (existingFaculty.length === 0) {
+      return res.status(404).json({ error: 'Faculty not found' });
+    }
+
+    // Update faculty
+    await db.query(
+      `UPDATE faculty 
+       SET user_id = ?, department_id = ?, qualification = ?, specialization = ?, 
+           phone = ?, office_number = ?, employment_status = ?
+       WHERE id = ? AND tenant_id = ?`,
+      [user_id, department_id, qualification, specialization, phone, office_number, employment_status || 'ACTIVE', faculty_id, req.tenantId]
+    );
+    
+    res.json({ message: 'Faculty updated successfully' });
+  } catch (error) {
+    console.error('Error updating faculty:', error);
+    res.status(500).json({ error: 'Failed to update faculty' });
+  }
+});
+
+// Delete faculty
+router.delete('/:faculty_id', async (req, res) => {
+  const db = getDatabase();
+  const { faculty_id } = req.params;
+
+  try {
+    // Check if faculty exists
+    const [existingFaculty] = await db.query(
+      'SELECT id FROM faculty WHERE id = ? AND tenant_id = ?',
+      [faculty_id, req.tenantId]
+    );
+    
+    if (existingFaculty.length === 0) {
+      return res.status(404).json({ error: 'Faculty not found' });
+    }
+
+    // Delete faculty
+    await db.query('DELETE FROM faculty WHERE id = ? AND tenant_id = ?', [faculty_id, req.tenantId]);
+    
+    res.json({ message: 'Faculty deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting faculty:', error);
+    res.status(500).json({ error: 'Failed to delete faculty' });
+  }
+});
+
 export default router;
