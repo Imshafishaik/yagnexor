@@ -14,9 +14,8 @@ export default function UsersPage() {
     password: '',
     first_name: '',
     last_name: '',
-    phone: '',
-    role_id: '',
-    status: 'ACTIVE',
+    role: '',
+    is_active: true,
   });
 
   useEffect(() => {
@@ -28,8 +27,7 @@ export default function UsersPage() {
       (user) =>
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.phone?.includes(searchTerm)
+        user.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(filtered);
   }, [searchTerm, users]);
@@ -70,9 +68,8 @@ export default function UsersPage() {
         password: '',
         first_name: '',
         last_name: '',
-        phone: '',
-        role_id: '',
-        status: 'ACTIVE',
+        role: '',
+        is_active: true,
       });
     } catch (error) {
       console.error('Error saving user:', error);
@@ -87,9 +84,8 @@ export default function UsersPage() {
       password: '',
       first_name: user.first_name,
       last_name: user.last_name,
-      phone: user.phone,
-      role_id: user.role_id,
-      status: user.status,
+      role: user.role,
+      is_active: user.is_active,
     });
     setShowUserForm(true);
   };
@@ -170,7 +166,7 @@ export default function UsersPage() {
               <div>
                 <p className="text-gray-600 text-sm">Active Users</p>
                 <p className="text-2xl font-bold text-gray-800 mt-2">
-                  {users.filter((u) => u.status === 'ACTIVE').length}
+                  {users.filter((u) => u.is_active === true).length}
                 </p>
               </div>
               <UserCheck className="text-green-600" size={32} />
@@ -182,7 +178,7 @@ export default function UsersPage() {
               <div>
                 <p className="text-gray-600 text-sm">Inactive Users</p>
                 <p className="text-2xl font-bold text-gray-800 mt-2">
-                  {users.filter((u) => u.status === 'INACTIVE').length}
+                  {users.filter((u) => u.is_active === false).length}
                 </p>
               </div>
               <Users className="text-red-600" size={32} />
@@ -196,7 +192,7 @@ export default function UsersPage() {
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search by name, email, or phone..."
+              placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -260,32 +256,30 @@ export default function UsersPage() {
                   />
                 </div>
 
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="Phone Number"
-                  value={userForm.phone}
+                <select
+                  name="role"
+                  value={userForm.role}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-
-                <input
-                  type="text"
-                  name="role_id"
-                  placeholder="Role ID"
-                  value={userForm.role_id}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+                  required
+                >
+                  <option value="">Select Role</option>
+                  <option value="super_admin">Super Admin</option>
+                  <option value="manager">Manager</option>
+                  <option value="principal">Principal</option>
+                  <option value="faculty">Faculty</option>
+                  <option value="student">Student</option>
+                  <option value="parent">Parent</option>
+                </select>
 
                 <select
-                  name="status"
-                  value={userForm.status}
-                  onChange={handleInputChange}
+                  name="is_active"
+                  value={userForm.is_active}
+                  onChange={(e) => setUserForm(prev => ({ ...prev, is_active: e.target.value === 'true' }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
                 </select>
 
                 <div className="flex gap-4 pt-4">
@@ -325,7 +319,6 @@ export default function UsersPage() {
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Phone</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
@@ -338,17 +331,16 @@ export default function UsersPage() {
                         {user.first_name} {user.last_name}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{user.phone}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{user.role_id}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{user.role}</td>
                       <td className="px-6 py-4">
                         <span
                           className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                            user.status === 'ACTIVE'
+                            user.is_active === true
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
                           }`}
                         >
-                          {user.status}
+                          {user.is_active === true ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td className="px-6 py-4 flex gap-2">

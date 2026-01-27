@@ -13,6 +13,15 @@ const createUserSchema = Joi.object({
   first_name: Joi.string().required(),
   last_name: Joi.string().required(),
   role: Joi.string().required(),
+  phone: Joi.string().optional(),
+});
+
+const updateUserSchema = Joi.object({
+  email: Joi.string().email().optional(),
+  first_name: Joi.string().optional(),
+  last_name: Joi.string().optional(),
+  role: Joi.string().optional(),
+  is_active: Joi.boolean().optional(),
 });
 
 // List users
@@ -62,6 +71,55 @@ router.get('/:user_id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Update user
+router.put('/:user_id', validateRequest(updateUserSchema), async (req, res) => {
+  const db = getDatabase();
+  const { user_id } = req.params;
+  const updateData = req.validatedBody;
+  
+  try {
+    // Check if user exists
+    const [existingUser] = await db.query(
+      'SELECT id FROM users WHERE id = ? AND tenant_id = ?',
+      [user_id, req.tenantId]
+    );
+    
+    if (existingUser.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Build dynamic update query
+    const updateFields = [];
+    const updateValues = [];
+    
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] !== undefined) {
+        updateFields.push(`${key} = ?`);
+        updateValues.push(updateData[key]);
+      }
+    });
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    updateValues.push(user_id, req.tenantId);
+    
+    await db.query(
+      `UPDATE users SET ${updateFields.join(', ')} WHERE id = ? AND tenant_id = ?`,
+      updateValues
+    );
+    
+    res.json({ message: 'User updated successfully' });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+    res.status(500).json({ error: 'Failed to update user' });
   }
 });
 

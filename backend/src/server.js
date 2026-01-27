@@ -9,14 +9,17 @@ import { runMigrations } from './migrations/migrate.js';
 import authRoutes from './domains/auth/auth-routes.js';
 import userRoutes from './domains/admin/user-routes.js';
 import roleRoutes from './domains/admin/role-routes.js';
+import departmentRoutes from './domains/admin/department-routes.js';
 import studentRoutes from './domains/education/student-routes.js';
 import facultyRoutes from './domains/education/faculty-routes.js';
+import courseRoutes from './domains/education/course-routes.js';
 import attendanceRoutes from './domains/education/attendance-routes.js';
 import examRoutes from './domains/education/exam-routes.js';
 import feeRoutes from './domains/education/fee-routes.js';
 import classRoutes from './domains/education/class-routes.js';
 import academicYearRoutes from './domains/education/academic-year-routes.js';
 import tenantRoutes from './domains/admin/tenant-routes.js';
+import dashboardRoutes from './domains/dashboard/dashboard-routes.js';
 
 dotenv.config();
 
@@ -42,13 +45,16 @@ app.use('/api/auth', authRoutes);
 // Protected routes
 app.use('/api/users', authMiddleware, tenantScopeMiddleware, userRoutes);
 app.use('/api/roles', authMiddleware, tenantScopeMiddleware, roleRoutes);
+app.use('/api/departments', authMiddleware, tenantScopeMiddleware, departmentRoutes);
 app.use('/api/students', authMiddleware, tenantScopeMiddleware, studentRoutes);
 app.use('/api/faculty', authMiddleware, tenantScopeMiddleware, facultyRoutes);
+app.use('/api/courses', authMiddleware, tenantScopeMiddleware, courseRoutes);
 app.use('/api/attendance', authMiddleware, tenantScopeMiddleware, attendanceRoutes);
 app.use('/api/exams', authMiddleware, tenantScopeMiddleware, examRoutes);
 app.use('/api/fees', authMiddleware, tenantScopeMiddleware, feeRoutes);
 app.use('/api/classes', authMiddleware, tenantScopeMiddleware, classRoutes);
 app.use('/api/academic-years', authMiddleware, tenantScopeMiddleware, academicYearRoutes);
+app.use('/api/dashboard', authMiddleware, tenantScopeMiddleware, dashboardRoutes);
 
 // Super Admin routes (no tenant scope)
 app.use('/api/tenants', authMiddleware, tenantRoutes);

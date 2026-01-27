@@ -54,10 +54,13 @@ export default function FacultyPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form data:', formData,editingId);
     try {
       if (editingId) {
+        console.log('Editing faculty member:', editingId, formData);
         await api.put(`/faculty/${editingId}`, formData);
       } else {
+        console.log('Adding new faculty member:', formData);
         await api.post('/faculty', formData);
       }
       fetchFaculty();

@@ -8,7 +8,7 @@ let pool = null;
 export async function initializeDatabase() {
   try {
     pool = mysql.createPool({
-      host: process.env.DB_HOST || 'localhost',
+      host: '127.0.0.1', // Force IPv4
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',

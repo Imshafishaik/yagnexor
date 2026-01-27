@@ -16,6 +16,7 @@ import FeesPage from './pages/FeesPage';
 import UsersPage from './pages/UsersPage';
 import RolesPage from './pages/RolesPage';
 import ClassesPage from './pages/ClassesPage';
+import CoursesPage from './pages/CoursesPage';
 import TenantsPage from './pages/TenantsPage';
 
 function App() {
@@ -109,6 +110,14 @@ function App() {
           element={
             <PrivateRoute>
               <ClassesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/courses"
+          element={
+            <PrivateRoute>
+              <CoursesPage />
             </PrivateRoute>
           }
         />
