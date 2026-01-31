@@ -5,13 +5,21 @@ import { LogIn } from 'lucide-react';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, isLoading, error } = useAuthStore();
+  const { login, isLoading, error, isAuthenticated } = useAuthStore();
   const [formData, setFormData] = useState({
     tenantDomain: '',
     email: '',
     password: '',
   });
   const [localError, setLocalError] = useState('');
+
+  // Redirect to dashboard when authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      console.log("LoginPage - user is authenticated, redirecting to dashboard");
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,9 +34,12 @@ export default function LoginPage() {
     setLocalError('');
 
     try {
+      console.log("LoginPage - submitting login form");
       await login(formData.tenantDomain, formData.email, formData.password);
-      navigate('/dashboard');
+      console.log("LoginPage - login completed, waiting for redirect...");
+      // Navigation will happen in the useEffect when isAuthenticated updates
     } catch (err) {
+      console.error("LoginPage - login error:", err);
       setLocalError(err.response?.data?.error || 'Login failed');
     }
   };

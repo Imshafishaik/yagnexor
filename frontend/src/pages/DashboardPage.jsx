@@ -72,10 +72,14 @@ export default function DashboardPage() {
   // Add manager-specific modules if user is a manager
   const allModules = user?.role === 'manager' ? [
     ...modules,
+    { name: 'Course Dashboard', icon: BookOpen, color: 'bg-green-50 text-green-600', path: '/course-dashboard' },
     { name: 'Class Management', icon: GraduationCap, color: 'bg-purple-50 text-purple-600', path: '/manager/classes' },
     { name: 'Course Management', icon: Library, color: 'bg-indigo-50 text-indigo-600', path: '/manager/courses' },
     { name: 'Department Management', icon: Building, color: 'bg-orange-50 text-orange-600', path: '/manager/departments' },
-  ] : modules;
+  ] : [
+    ...modules,
+    { name: 'Course Dashboard', icon: BookOpen, color: 'bg-green-50 text-green-600', path: '/course-dashboard' },
+  ];
 
   const handleModuleClick = (path) => {
     if (path !== '#') {

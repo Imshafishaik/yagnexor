@@ -55,7 +55,14 @@ const studentRegisterSchema = Joi.object({
 });
 
 // Register - Create new tenant and admin user
-router.post('/register', validateRequest(registerSchema), async (req, res) => {
+router.post('/register', (req, res, next) => {
+  // Check if the action parameter is correct
+  if (req.query.action !== 'ndksd321423fndkfds86459') {
+    return res.status(404).json({ error: 'Endpoint not found' });
+  }
+  // Continue with validation and processing
+  validateRequest(registerSchema)(req, res, next);
+}, async (req, res) => {
   const db = getDatabase();
   const { tenant_name, tenant_domain, admin_email, admin_password, admin_first_name, admin_last_name } = req.validatedBody;
 

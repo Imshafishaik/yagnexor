@@ -12,7 +12,7 @@ import roleRoutes from './domains/admin/role-routes.js';
 import departmentRoutes from './domains/admin/department-routes.js';
 import studentRoutes from './domains/education/student-routes.js';
 import facultyRoutes from './domains/education/faculty-routes.js';
-import courseRoutes from './domains/education/course-routes.js';
+import courseRoutes from './domains/courses/course-routes.js';
 import subjectRoutes from './domains/education/subject-routes.js';
 import attendanceRoutes from './domains/education/attendance-routes.js';
 import examRoutes from './domains/education/exam-routes.js';

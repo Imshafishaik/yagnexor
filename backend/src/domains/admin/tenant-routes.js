@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Joi from 'joi';
 import { validateRequest } from '../../core/middleware/guards.js';
 import { requirePermission, requireMinimumRole } from '../../core/middleware/role-middleware.js';
+import emailService from '../../core/services/email-service.js';
 
 const router = express.Router();
 
@@ -112,20 +113,38 @@ router.post('/', validateRequest(createTenantSchema), async (req, res) => {
       [adminId, tenantId, admin_email, hashedPassword, admin_first_name, admin_last_name]
     );
 
+    // Prepare institution data for emails
+    const institutionData = {
+      id: tenantId,
+      name,
+      domain,
+      admin: {
+        id: adminId,
+        email: admin_email,
+        first_name: admin_first_name,
+        last_name: admin_last_name,
+        role: 'manager'
+      }
+    };
+
+    // Send emails asynchronously (don't wait for email sending to complete)
+    try {
+      // Send email to the user who created the institution
+      const createdByEmail = req.user?.email;
+      if (createdByEmail) {
+        emailService.sendInstitutionCreatedEmail(institutionData, createdByEmail);
+      }
+
+      // Send welcome email to the new institution admin
+      emailService.sendAdminWelcomeEmail(institutionData);
+    } catch (emailError) {
+      console.error('Error sending emails:', emailError);
+      // Don't fail the request if emails fail, just log the error
+    }
+
     res.status(201).json({
       message: 'Tenant created successfully',
-      tenant: {
-        id: tenantId,
-        name,
-        domain,
-        admin: {
-          id: adminId,
-          email: admin_email,
-          first_name: admin_first_name,
-          last_name: admin_last_name,
-          role: 'manager'
-        }
-      }
+      tenant: institutionData
     });
   } catch (error) {
     console.error('Error creating tenant:', error);

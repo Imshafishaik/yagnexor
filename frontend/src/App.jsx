@@ -17,7 +17,10 @@ import UsersPage from './pages/UsersPage';
 import RolesPage from './pages/RolesPage';
 import ClassesPage from './pages/ClassesPage';
 import CoursesPage from './pages/CoursesPage';
+import CourseDashboardPage from './pages/CourseDashboardPage';
 import TenantsPage from './pages/TenantsPage';
+import TeacherCoursePage from './pages/TeacherCoursePage';
+import CourseAccessPage from './pages/CourseAccessPage';
 import ManagerClassManagementPage from './pages/ManagerClassManagementPage';
 import ManagerCourseManagementPage from './pages/ManagerCourseManagementPage';
 import ManagerDepartmentManagementPage from './pages/ManagerDepartmentManagementPage';
@@ -25,54 +28,60 @@ import ManagerDepartmentManagementPage from './pages/ManagerDepartmentManagement
 function App() {
   const { checkAuth, user, isAuthenticated } = useAuthStore();
   const [authChecked, setAuthChecked] = useState(false);
-  const [hasValidToken, setHasValidToken] = useState(false);
 
   useEffect(() => {
     console.log("App useEffect - checking auth...");
-    
-    // Check for valid token first
     const token = localStorage.getItem('access_token');
     const refreshToken = localStorage.getItem('refresh_token');
     
     if (token && refreshToken) {
-      // Check if token is valid (not expired)
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const currentTime = Date.now() / 1000;
         
+        console.log("App useEffect - token expires at:", new Date(payload.exp * 1000), "current time:", new Date(currentTime * 1000));
+        
         if (payload.exp > currentTime) {
-          console.log("App useEffect - valid token found");
-          setHasValidToken(true);
-          
-          // Check if we have persisted auth state
           const persistedUser = useAuthStore.getState().user;
           const persistedAuth = useAuthStore.getState().isAuthenticated;
           
           if (persistedUser && persistedAuth) {
             console.log("App useEffect - using persisted state");
+            // Clear tokens immediately to force fresh login
+            console.log("App useEffect - clearing old tokens to force fresh login");
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            useAuthStore.getState().logout();
             setAuthChecked(true);
           } else {
-            console.log("App useEffect - checking fresh auth");
-            const result = checkAuth();
-            console.log("App useEffect - checkAuth result:", result);
+            console.log("App useEffect - checking auth with valid token");
+            checkAuth();
             setAuthChecked(true);
           }
         } else {
-          console.log("App useEffect - token expired");
-          setHasValidToken(false);
+          console.log("App useEffect - token expired, clearing tokens");
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          useAuthStore.getState().logout();
           setAuthChecked(true);
         }
       } catch (error) {
-        console.error("App useEffect - invalid token format:", error);
-        setHasValidToken(false);
+        console.log("App useEffect - invalid token format, clearing tokens");
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        useAuthStore.getState().logout();
         setAuthChecked(true);
       }
     } else {
-      console.log("App useEffect - no token found");
-      setHasValidToken(false);
+      console.log("App useEffect - no tokens found");
       setAuthChecked(true);
     }
   }, [checkAuth]);
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    console.log("App useEffect - auth state changed:", { isAuthenticated, user });
+  }, [isAuthenticated, user]);
 
   // Periodic token refresh check
   useEffect(() => {
@@ -99,7 +108,7 @@ function App() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  console.log("App render - authChecked:", authChecked, "hasValidToken:", hasValidToken, "user:", user, "isAuthenticated:", isAuthenticated);
+  console.log("App render - authChecked:", authChecked, "isAuthenticated:", isAuthenticated, "user:", user);
 
   if (!authChecked) {
     return (
@@ -115,210 +124,106 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={hasValidToken ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
-        <Route path="/register" element={hasValidToken ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
-        <Route path="/student-register" element={hasValidToken ? <Navigate to="/dashboard" replace /> : <StudentRegisterPage />} />
-        <Route path="/faculty-register" element={hasValidToken ? <Navigate to="/dashboard" replace /> : <FacultyRegisterPage />} />
+        {/* Public routes - redirect to dashboard if authenticated */}
+        <Route 
+          path="/login" 
+          element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />} 
+        />
+        <Route 
+          path="/register" 
+          element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" replace />} 
+        />
+        <Route 
+          path="/student-register" 
+          element={!isAuthenticated ? <StudentRegisterPage /> : <Navigate to="/dashboard" replace />} 
+        />
+        <Route 
+          path="/faculty-register" 
+          element={!isAuthenticated ? <FacultyRegisterPage /> : <Navigate to="/dashboard" replace />} 
+        />
         
-        {/* Protected routes */}
+        {/* Protected routes - redirect to login if not authenticated */}
         <Route
           path="/dashboard"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <RoleBasedDashboard />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><RoleBasedDashboard /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/students"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <StudentsPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><StudentsPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/faculty"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <FacultyPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><FacultyPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/attendance"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <AttendancePage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><AttendancePage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/teacher-attendance"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <TeacherAttendancePage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><TeacherAttendancePage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/exams"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <ExamsPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><ExamsPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/fees"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <FeesPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><FeesPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/users"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <UsersPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><UsersPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/roles"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <RolesPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><RolesPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/classes"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <ClassesPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><ClassesPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/courses"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <CoursesPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><CoursesPage /></PrivateRoute> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/course-dashboard"
+          element={isAuthenticated ? <PrivateRoute><CourseDashboardPage /></PrivateRoute> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/teacher/courses"
+          element={isAuthenticated ? <PrivateRoute><TeacherCoursePage /></PrivateRoute> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/course-access"
+          element={isAuthenticated ? <PrivateRoute><CourseAccessPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/tenants"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <TenantsPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><TenantsPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/manager/classes"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <ManagerClassManagementPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><ManagerClassManagementPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/manager/courses"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <ManagerCourseManagementPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><ManagerCourseManagementPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/manager/departments"
-          element={
-            hasValidToken ? (
-              <PrivateRoute>
-                <ManagerDepartmentManagementPage />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={isAuthenticated ? <PrivateRoute><ManagerDepartmentManagementPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         
-        {/* Default routes */}
+        {/* Default routes - redirect based on authentication status */}
         <Route 
           path="/" 
-          element={
-            hasValidToken ? 
-              <Navigate to="/dashboard" replace /> : 
-              <Navigate to="/login" replace />
-          } 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
         />
         <Route 
           path="*" 
-          element={
-            hasValidToken ? 
-              <Navigate to="/dashboard" replace /> : 
-              <Navigate to="/login" replace />
-          } 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
         />
       </Routes>
     </Router>

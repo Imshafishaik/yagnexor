@@ -47,7 +47,7 @@ export const useAuthStore = create(
   register: async (tenantName, tenantDomain, adminEmail, adminPassword, adminFirstName, adminLastName) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/auth/register', {
+      const response = await api.post('/auth/register?action=ndksd321423fndkfds86459', {
         tenant_name: tenantName,
         tenant_domain: tenantDomain,
         admin_email: adminEmail,

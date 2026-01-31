@@ -3,6 +3,7 @@ import { getDatabase } from '../../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
 import Joi from 'joi';
 import { validateRequest } from '../../core/middleware/guards.js';
+import { requirePermission } from '../../core/middleware/role-middleware.js';
 
 const router = express.Router();
 
@@ -74,7 +75,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new department
-router.post('/', validateRequest(createDepartmentSchema), async (req, res) => {
+router.post('/', requirePermission('departments:create'), validateRequest(createDepartmentSchema), async (req, res) => {
   const db = getDatabase();
   const { name, description, hod_id, campus_id } = req.validatedBody;
   
@@ -100,7 +101,7 @@ router.post('/', validateRequest(createDepartmentSchema), async (req, res) => {
 });
 
 // Update department
-router.put('/:id', validateRequest(updateDepartmentSchema), async (req, res) => {
+router.put('/:id', requirePermission('departments:update'), validateRequest(updateDepartmentSchema), async (req, res) => {
   const db = getDatabase();
   const { id } = req.params;
   const { name, description, hod_id, campus_id } = req.validatedBody;
@@ -159,7 +160,7 @@ router.put('/:id', validateRequest(updateDepartmentSchema), async (req, res) => 
 });
 
 // Delete department
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('departments:delete'), async (req, res) => {
   const db = getDatabase();
   const { id } = req.params;
   

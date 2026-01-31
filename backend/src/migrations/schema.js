@@ -284,6 +284,43 @@ export const migrations = [
         FOREIGN KEY (tenant_id) REFERENCES tenants(id),
         FOREIGN KEY (user_id) REFERENCES users(id)
       );
+
+      CREATE TABLE IF NOT EXISTS courses (
+        id VARCHAR(36) PRIMARY KEY,
+        tenant_id VARCHAR(36) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        course_code VARCHAR(50) UNIQUE,
+        teacher_id VARCHAR(36) NOT NULL,
+        course_token VARCHAR(64) UNIQUE NOT NULL,
+        is_active BOOLEAN DEFAULT 1,
+        max_students INT DEFAULT 0,
+        current_enrollments INT DEFAULT 0,
+        start_date DATE,
+        end_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+        FOREIGN KEY (teacher_id) REFERENCES users(id),
+        INDEX idx_course_token (course_token),
+        INDEX idx_teacher_id (teacher_id),
+        INDEX idx_tenant_id (tenant_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS course_enrollments (
+        id VARCHAR(36) PRIMARY KEY,
+        tenant_id VARCHAR(36) NOT NULL,
+        course_id VARCHAR(36) NOT NULL,
+        student_id VARCHAR(36) NOT NULL,
+        course_token_used VARCHAR(64),
+        enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT 1,
+        FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+        FOREIGN KEY (course_id) REFERENCES courses(id),
+        FOREIGN KEY (student_id) REFERENCES students(id),
+        UNIQUE KEY unique_enrollment (course_id, student_id),
+        INDEX idx_student_id (student_id)
+      );
     `,
   },
 ];

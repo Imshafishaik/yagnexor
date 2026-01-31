@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { 
   Building, 
@@ -34,13 +35,8 @@ export default function ManagerDepartmentManagementPage() {
 
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('/api/departments', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setDepartments(data.departments || []);
+      const response = await api.get('/departments');
+      setDepartments(response.data.departments || []);
     } catch (error) {
       console.error('Error fetching departments:', error);
     } finally {
@@ -51,16 +47,9 @@ export default function ManagerDepartmentManagementPage() {
   const handleCreateDepartment = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/departments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(departmentForm)
-      });
+      const response = await api.post('/departments', departmentForm);
       
-      if (response.ok) {
+      if (response.status === 201) {
         setShowCreateForm(false);
         setDepartmentForm({ name: '', description: '' });
         fetchDepartments();
@@ -73,16 +62,9 @@ export default function ManagerDepartmentManagementPage() {
   const handleUpdateDepartment = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/departments/${editingDepartment.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(departmentForm)
-      });
+      const response = await api.put(`/departments/${editingDepartment.id}`, departmentForm);
       
-      if (response.ok) {
+      if (response.status === 200) {
         setEditingDepartment(null);
         setDepartmentForm({ name: '', description: '' });
         fetchDepartments();
@@ -98,14 +80,9 @@ export default function ManagerDepartmentManagementPage() {
     }
 
     try {
-      const response = await fetch(`/api/departments/${departmentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await api.delete(`/departments/${departmentId}`);
       
-      if (response.ok) {
+      if (response.status === 200) {
         fetchDepartments();
       }
     } catch (error) {

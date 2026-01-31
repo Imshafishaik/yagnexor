@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
-import { LogOut, BookOpen, Calendar, Award, FileText, User } from 'lucide-react';
+import { LogOut, BookOpen, Calendar, Award, FileText, User, Key } from 'lucide-react';
 
 export default function StudentDashboardPage() {
   const navigate = useNavigate();
@@ -24,12 +24,9 @@ export default function StudentDashboardPage() {
 
     const fetchStudentData = async () => {
       try {
-        // Fetch student specific data
-        const studentRes = await api.get(`/students/user/${user.id}`).catch(() => ({ data: null }));
-        
-        if (studentRes.data) {
-          setStudentInfo(studentRes.data);
-        }
+        // For now, use the user object directly as student info
+        // In a real implementation, you might fetch additional student-specific data
+        setStudentInfo(user);
 
         // Mock stats for now - in real app, these would come from API
         setStats({
@@ -157,7 +154,21 @@ export default function StudentDashboardPage() {
         {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <button
+              onClick={() => navigate('/course-dashboard')}
+              className="flex items-center space-x-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition duration-200"
+            >
+              <BookOpen className="text-green-600" size={20} />
+              <span className="text-green-700 font-medium">Course Dashboard</span>
+            </button>
+            <button
+              onClick={() => navigate('/course-access')}
+              className="flex items-center space-x-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition duration-200"
+            >
+              <Key className="text-blue-600" size={20} />
+              <span className="text-blue-700 font-medium">Enroll with Token</span>
+            </button>
             <button
               onClick={() => navigate('/attendance')}
               className="flex items-center space-x-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition duration-200"

@@ -17,6 +17,7 @@ const ROLE_PERMISSIONS = {
     'users:create', 'users:read', 'users:update', 'users:delete',
     'roles:create', 'roles:read', 'roles:update', 'roles:delete',
     'permissions:create', 'permissions:read', 'permissions:update', 'permissions:delete',
+    'departments:create', 'departments:read', 'departments:update', 'departments:delete',
     'courses:create', 'courses:read', 'courses:update', 'courses:delete',
     'classes:create', 'classes:read', 'classes:update', 'classes:delete',
     'students:create', 'students:read', 'students:update', 'students:delete',
@@ -29,6 +30,7 @@ const ROLE_PERMISSIONS = {
   'manager': [
     'users:create', 'users:read', 'users:update', 'users:delete',
     'roles:read',
+    'departments:create', 'departments:read', 'departments:update', 'departments:delete',
     'courses:create', 'courses:read', 'courses:update', 'courses:delete',
     'classes:create', 'classes:read', 'classes:update', 'classes:delete',
     'students:read', 'students:update',
