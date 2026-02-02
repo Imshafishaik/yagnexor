@@ -21,7 +21,6 @@ export default function StudentsPage() {
     user_id: '',
     class_id: '',
     academic_year_id: '',
-    roll_number: '',
     enrollment_number: '',
     date_of_birth: '',
     gender: 'Male',
@@ -40,7 +39,6 @@ export default function StudentsPage() {
   useEffect(() => {
     const filtered = students.filter(
       (student) =>
-        student.roll_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.enrollment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.id?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -111,10 +109,6 @@ export default function StudentsPage() {
       setError('Academic Year ID is required');
       return false;
     }
-    if (!formData.roll_number.trim()) {
-      setError('Roll Number is required');
-      return false;
-    }
     if (!formData.enrollment_number.trim()) {
       setError('Enrollment Number is required');
       return false;
@@ -154,7 +148,6 @@ export default function StudentsPage() {
         user_id: '',
         class_id: '',
         academic_year_id: '',
-        roll_number: '',
         enrollment_number: '',
         date_of_birth: '',
         gender: 'Male',
@@ -207,7 +200,6 @@ export default function StudentsPage() {
                 user_id: '',
                 class_id: '',
                 academic_year_id: '',
-                roll_number: '',
                 enrollment_number: '',
                 date_of_birth: '',
                 gender: 'Male',
@@ -228,7 +220,7 @@ export default function StudentsPage() {
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search by roll number, enrollment number, or ID..."
+              placeholder="Search by enrollment number, or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -314,13 +306,6 @@ export default function StudentsPage() {
                       ))}
                     </select>
                   </div>
-                  <input
-                    type="text"
-                    name="roll_number"
-                    placeholder="Roll Number *"
-                    value={formData.roll_number}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -412,7 +397,6 @@ export default function StudentsPage() {
                 <thead className="bg-gray-100 border-b">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Roll #</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Enrollment #</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Gender</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Phone</th>
@@ -424,7 +408,6 @@ export default function StudentsPage() {
                   {filteredStudents?.map((student) => (
                     <tr key={student.id} className="border-b hover:bg-gray-50 transition">
                       <td className="px-6 py-4 text-sm text-gray-900">{student.first_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{student.roll_number}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{student.enrollment_number}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{student.gender}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{student.phone}</td>

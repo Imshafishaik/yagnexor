@@ -8,7 +8,12 @@ const router = Router();
 router.get('/', async (req, res) => {
   const db = getDatabase();
   try {
-    const [rows] = await db.query('SELECT * FROM faculty WHERE tenant_id = ?', [req.tenantId]);
+    const [rows] = await db.query(`
+      SELECT f.*, u.first_name, u.last_name, u.email
+      FROM faculty f
+      LEFT JOIN users u ON f.user_id = u.id
+      WHERE f.tenant_id = ?
+    `, [req.tenantId]);
     res.json({ faculty: rows });
   } catch (error) {
     console.error('Error fetching faculty:', error);

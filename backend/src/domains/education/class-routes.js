@@ -325,9 +325,9 @@ router.post('/:id/assign-faculty', async (req, res) => {
       return res.status(404).json({ message: 'Class not found' });
     }
 
-    // Check if faculty exists
+    // Check if faculty exists (using user_id)
     const [existingFaculty] = await db.query(
-      'SELECT id FROM faculty WHERE id = ? AND tenant_id = ?',
+      'SELECT id FROM faculty WHERE user_id = ? AND tenant_id = ?',
       [faculty_id, req.tenantId]
     );
     
@@ -335,7 +335,7 @@ router.post('/:id/assign-faculty', async (req, res) => {
       return res.status(404).json({ message: 'Faculty not found' });
     }
 
-    // Update class with faculty assignment
+    // Update class with faculty assignment (use user_id since class_teacher_id references users table)
     await db.query(
       'UPDATE classes SET class_teacher_id = ? WHERE id = ? AND tenant_id = ?',
       [faculty_id, id, req.tenantId]

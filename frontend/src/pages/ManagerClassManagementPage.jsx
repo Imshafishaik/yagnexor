@@ -102,7 +102,7 @@ export default function ManagerClassManagementPage() {
 
   const fetchClassSubjects = async (classId) => {
     try {
-      const response = await api.get(`/api/classes/${classId}/subjects`);
+      const response = await api.get(`/classes/${classId}/subjects`);
       return response.data.subjects || [];
     } catch (error) {
       console.error('Error fetching class subjects:', error);
@@ -112,7 +112,7 @@ export default function ManagerClassManagementPage() {
 
   const fetchClassStudents = async (classId) => {
     try {
-      const response = await api.get(`/api/classes/${classId}/students`);
+      const response = await api.get(`/classes/${classId}/students`);
       return response.data.students || [];
     } catch (error) {
       console.error('Error fetching class students:', error);
@@ -202,7 +202,8 @@ export default function ManagerClassManagementPage() {
     cls.course_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.class_teacher_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
+  console.log("..........filteredClasses",filteredClasses);
+  
   const getAvailableStudents = (classItem) => {
     const enrolledStudentIds = classItem.students?.map(s => s.id) || [];
     return students.filter(student => !enrolledStudentIds.includes(student.id));
@@ -390,7 +391,6 @@ export default function ManagerClassManagementPage() {
                               <div className="flex items-center gap-2">
                                 <Users size={16} className="text-gray-500" />
                                 <span className="text-sm text-gray-700">{student.full_name}</span>
-                                <span className="text-xs text-gray-500">({student.roll_number})</span>
                               </div>
                               <button
                                 onClick={() => handleRemoveStudent(classItem.id, student.id)}
@@ -552,7 +552,6 @@ export default function ManagerClassManagementPage() {
                 <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
                   <div>
                     <div className="font-medium text-gray-900">{student.full_name}</div>
-                    <div className="text-sm text-gray-500">{student.roll_number}</div>
                   </div>
                   <button
                     onClick={() => handleEnrollStudents(showEnrollStudents, [student.id])}

@@ -13,12 +13,12 @@ export default function StudentRegisterPage() {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    rollNumber: '',
     phone: '',
     address: '',
     dateOfBirth: '',
   });
   const [localError, setLocalError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,13 +49,16 @@ export default function StudentRegisterPage() {
         formData.password,
         formData.firstName,
         formData.lastName,
-        formData.rollNumber,
-        null, // class_id - can be added later
+        null, // rollNumber - removed
+        null, // classId - can be added later
         formData.phone,
         formData.address,
         formData.dateOfBirth
       );
-      navigate('/dashboard');
+      setSuccessMessage('Registration successful! Please login with your credentials.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (err) {
       setLocalError(err.response?.data?.error || 'Student registration failed');
     }
@@ -76,6 +79,12 @@ export default function StudentRegisterPage() {
         {(error || localError) && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
             {error || localError}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
+            {successMessage}
           </div>
         )}
 
@@ -178,21 +187,6 @@ export default function StudentRegisterPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
-          </div>
-
-          <div>
-            <label htmlFor="rollNumber" className="block text-sm font-medium text-gray-700 mb-1">
-              Roll Number (Optional)
-            </label>
-            <input
-              id="rollNumber"
-              name="rollNumber"
-              type="text"
-              placeholder="e.g., 2024-001"
-              value={formData.rollNumber}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
           </div>
 
           <div>

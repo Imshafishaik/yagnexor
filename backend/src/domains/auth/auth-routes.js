@@ -262,14 +262,8 @@ router.post('/faculty-register', validateRequest(facultyRegisterSchema), async (
       [facultyId, tenant.id, facultyUser.id, departmentId, specialization || null, phone || null]
     );
 
-    // Generate tokens
-    const accessToken = generateAccessToken(facultyUser);
-    const refreshToken = generateRefreshToken(facultyUser);
-
     res.status(201).json({
       message: 'Faculty registration successful',
-      access_token: accessToken,
-      refresh_token: refreshToken,
       user: {
         id: facultyUser.id,
         email: facultyUser.email,
@@ -332,14 +326,8 @@ router.post('/student-register', validateRequest(studentRegisterSchema), async (
       ]
     );
 
-    // Generate tokens
-    const accessToken = generateAccessToken(studentUser);
-    const refreshToken = generateRefreshToken(studentUser);
-
     res.status(201).json({
       message: 'Student registration successful',
-      access_token: accessToken,
-      refresh_token: refreshToken,
       user: {
         id: studentUser.id,
         email: studentUser.email,

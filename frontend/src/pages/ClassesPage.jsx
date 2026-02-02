@@ -11,6 +11,8 @@ export default function ClassesPage() {
   const [courses, setCourses] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  console.log("........teachers",teachers);
+  
   const [formData, setFormData] = useState({
     name: '',
     course_id: '',

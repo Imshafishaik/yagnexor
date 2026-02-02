@@ -311,9 +311,6 @@ export default function TeacherAttendancePage() {
                             <p className="font-medium text-gray-900">
                               {student.first_name} {student.last_name}
                             </p>
-                            <p className="text-sm text-gray-500">
-                              Roll No: {student.roll_number || 'N/A'}
-                            </p>
                           </div>
                         </div>
 

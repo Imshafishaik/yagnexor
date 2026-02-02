@@ -38,15 +38,15 @@ Complete listing of all 10 frontend pages with their key features and structure.
 
 **Key Features:**
 - Student admission record management
-- Search by roll number, enrollment number, ID
+- Search by enrollment number, ID
 - Create, Edit, Delete students
 - Modal form for data entry
 - Status tracking (ACTIVE/INACTIVE)
-- Table with 8 columns
+- Table with 7 columns
 
 **Form Fields:**
 - user_id, class_id, academic_year_id
-- roll_number, enrollment_number
+- enrollment_number
 - dob, gender, phone, address
 - status
 

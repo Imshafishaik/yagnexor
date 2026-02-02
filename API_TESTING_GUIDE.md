@@ -217,7 +217,6 @@ curl -X POST http://localhost:3000/api/students \
     "user_id": "user-uuid-from-above",
     "class_id": "class-uuid-here",
     "academic_year_id": "year-uuid-here",
-    "roll_number": "S001",
     "enrollment_number": "2024-S001",
     "date_of_birth": "2005-06-15",
     "gender": "Male",

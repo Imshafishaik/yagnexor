@@ -94,19 +94,10 @@ export const useAuthStore = create(
 
       const response = await api.post('/auth/faculty-register', requestData);
 
-      const { access_token, refresh_token, user } = response.data;
-
-      localStorage.setItem('access_token', access_token);
-      localStorage.setItem('refresh_token', refresh_token);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      set({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-
-      return user;
+      // Don't auto-login after registration, just return success
+      set({ isLoading: false });
+      
+      return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Faculty registration failed';
       set({ error: errorMessage, isLoading: false });
@@ -126,7 +117,6 @@ export const useAuthStore = create(
       };
 
       // Only include optional fields if they have values
-      if (rollNumber) requestData.roll_number = rollNumber;
       if (classId) requestData.class_id = classId;
       if (phone) requestData.phone = phone;
       if (address) requestData.address = address;
@@ -134,19 +124,10 @@ export const useAuthStore = create(
 
       const response = await api.post('/auth/student-register', requestData);
 
-      const { access_token, refresh_token, user } = response.data;
-
-      localStorage.setItem('access_token', access_token);
-      localStorage.setItem('refresh_token', refresh_token);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      set({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-
-      return user;
+      // Don't auto-login after registration, just return success
+      set({ isLoading: false });
+      
+      return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Student registration failed';
       set({ error: errorMessage, isLoading: false });

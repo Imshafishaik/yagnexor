@@ -93,9 +93,6 @@ export default function StudentDashboardPage() {
                 {user?.first_name} {user?.last_name}
               </h2>
               <p className="text-gray-600">{user?.email}</p>
-              {studentInfo?.roll_number && (
-                <p className="text-sm text-gray-500">Roll Number: {studentInfo.roll_number}</p>
-              )}
             </div>
           </div>
         </div>

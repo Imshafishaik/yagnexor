@@ -18,6 +18,7 @@ export default function FacultyRegisterPage() {
     phone: '',
   });
   const [localError, setLocalError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,7 +53,10 @@ export default function FacultyRegisterPage() {
         formData.specialization,
         formData.phone
       );
-      navigate('/dashboard');
+      setSuccessMessage('Registration successful! Please login with your credentials.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (err) {
       setLocalError(err.response?.data?.error || 'Faculty registration failed');
     }
@@ -73,6 +77,12 @@ export default function FacultyRegisterPage() {
         {(error || localError) && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
             {error || localError}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
+            {successMessage}
           </div>
         )}
 

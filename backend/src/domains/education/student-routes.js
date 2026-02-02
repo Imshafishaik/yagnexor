@@ -24,14 +24,14 @@ router.get('/', async (req, res) => {
 // Create student
 router.post('/', async (req, res) => {
   const db = getDatabase();
-  const { user_id, class_id, academic_year_id, roll_number, enrollment_number, date_of_birth, gender, phone, address } = req.body;
+  const { user_id, class_id, academic_year_id, enrollment_number, date_of_birth, gender, phone, address } = req.body;
 
   try {
     const studentId = uuidv4();
     await db.query(
-      `INSERT INTO students (id, tenant_id, user_id, class_id, academic_year_id, roll_number, enrollment_number, date_of_birth, gender, phone, address)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [studentId, req.tenantId, user_id, class_id, academic_year_id, roll_number, enrollment_number, date_of_birth, gender, phone, address]
+      `INSERT INTO students (id, tenant_id, user_id, class_id, academic_year_id, enrollment_number, date_of_birth, gender, phone, address)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [studentId, req.tenantId, user_id, class_id, academic_year_id, enrollment_number, date_of_birth, gender, phone, address]
     );
     res.status(201).json({ message: 'Student created', student_id: studentId });
   } catch (error) {
@@ -63,7 +63,7 @@ router.get('/:student_id', async (req, res) => {
 // Update student
 router.put('/:student_id', async (req, res) => {
   const db = getDatabase();
-  const { user_id, class_id, academic_year_id, roll_number, enrollment_number, date_of_birth, gender, phone, address } = req.body;
+  const { user_id, class_id, academic_year_id, enrollment_number, date_of_birth, gender, phone, address } = req.body;
   
   try {
     // Check if student exists
@@ -79,10 +79,10 @@ router.put('/:student_id', async (req, res) => {
     // Update student
     await db.query(
       `UPDATE students 
-       SET user_id = ?, class_id = ?, academic_year_id = ?, roll_number = ?, enrollment_number = ?, 
+       SET user_id = ?, class_id = ?, academic_year_id = ?, enrollment_number = ?, 
            date_of_birth = ?, gender = ?, phone = ?, address = ?
        WHERE id = ? AND tenant_id = ?`,
-      [user_id, class_id, academic_year_id, roll_number, enrollment_number, date_of_birth, gender, phone, address, req.params.student_id, req.tenantId]
+      [user_id, class_id, academic_year_id, enrollment_number, date_of_birth, gender, phone, address, req.params.student_id, req.tenantId]
     );
     
     res.json({ message: 'Student updated successfully' });
