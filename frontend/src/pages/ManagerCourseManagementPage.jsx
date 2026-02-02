@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import api from '../services/api';
 import { 
   BookOpen, 
   Plus, 
@@ -40,9 +41,7 @@ export default function ManagerCourseManagementPage() {
   const [subjectForm, setSubjectForm] = useState({
     name: '',
     code: '',
-    description: '',
-    credits: 1,
-    is_elective: false
+    credits: 1
   });
 
   // Fetch data
@@ -53,13 +52,8 @@ export default function ManagerCourseManagementPage() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/courses', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setCourses(data.courses || []);
+      const response = await api.get('/courses');
+      setCourses(response.data.courses || []);
     } catch (error) {
       console.error('Error fetching courses:', error);
     } finally {
@@ -69,13 +63,8 @@ export default function ManagerCourseManagementPage() {
 
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('/api/departments', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setDepartments(data.departments || []);
+      const response = await api.get('/departments');
+      setDepartments(response.data.departments || []);
     } catch (error) {
       console.error('Error fetching departments:', error);
     }
@@ -83,13 +72,8 @@ export default function ManagerCourseManagementPage() {
 
   const fetchCourseSubjects = async (courseId) => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/subjects`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      return data.subjects || [];
+      const response = await api.get(`/subjects/course/${courseId}`);
+      return response.data.subjects || [];
     } catch (error) {
       console.error('Error fetching course subjects:', error);
       return [];
@@ -99,16 +83,9 @@ export default function ManagerCourseManagementPage() {
   const handleCreateCourse = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/courses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(courseForm)
-      });
+      const response = await api.post('/courses', courseForm);
       
-      if (response.ok) {
+      if (response.status === 201) {
         setShowCreateCourseForm(false);
         setCourseForm({
           name: '',
@@ -126,23 +103,17 @@ export default function ManagerCourseManagementPage() {
 
   const handleCreateSubject = async (courseId) => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/subjects`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(subjectForm)
+      const response = await api.post('/subjects', {
+        ...subjectForm,
+        course_id: courseId
       });
       
-      if (response.ok) {
+      if (response.status === 201) {
         setShowCreateSubjectForm(null);
         setSubjectForm({
           name: '',
           code: '',
-          description: '',
-          credits: 1,
-          is_elective: false
+          credits: 1
         });
         // Refresh the expanded course data
         if (expandedCourse === courseId) {
@@ -184,14 +155,9 @@ export default function ManagerCourseManagementPage() {
     }
 
     try {
-      const response = await fetch(`/api/courses/${courseId}/subjects/${subjectId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await api.delete(`/subjects/${subjectId}`);
       
-      if (response.ok) {
+      if (response.status === 200) {
         // Refresh the expanded course data
         if (expandedCourse === courseId) {
           const subjectsData = await fetchCourseSubjects(courseId);
@@ -468,7 +434,6 @@ export default function ManagerCourseManagementPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
                   <input
                     type="text"
-                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={courseForm.code}
                     onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })}
@@ -567,16 +532,6 @@ export default function ManagerCourseManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={subjectForm.description}
-                    onChange={(e) => setSubjectForm({ ...subjectForm, description: e.target.value })}
-                  />
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Credits</label>
                   <input
                     type="number"
@@ -588,18 +543,6 @@ export default function ManagerCourseManagementPage() {
                   />
                 </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="is_elective"
-                    className="mr-2"
-                    checked={subjectForm.is_elective}
-                    onChange={(e) => setSubjectForm({ ...subjectForm, is_elective: e.target.checked })}
-                  />
-                  <label htmlFor="is_elective" className="text-sm text-gray-700">
-                    Elective Subject
-                  </label>
-                </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">

@@ -292,6 +292,7 @@ export const migrations = [
         description TEXT,
         course_code VARCHAR(50) UNIQUE,
         teacher_id VARCHAR(36) NOT NULL,
+        department_id VARCHAR(36),
         course_token VARCHAR(64) UNIQUE NOT NULL,
         is_active BOOLEAN DEFAULT 1,
         max_students INT DEFAULT 0,
@@ -302,9 +303,11 @@ export const migrations = [
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (tenant_id) REFERENCES tenants(id),
         FOREIGN KEY (teacher_id) REFERENCES users(id),
+        FOREIGN KEY (department_id) REFERENCES departments(id),
         INDEX idx_course_token (course_token),
         INDEX idx_teacher_id (teacher_id),
-        INDEX idx_tenant_id (tenant_id)
+        INDEX idx_tenant_id (tenant_id),
+        INDEX idx_department_id (department_id)
       );
 
       CREATE TABLE IF NOT EXISTS course_enrollments (

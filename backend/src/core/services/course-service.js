@@ -9,21 +9,18 @@ export async function createCourse(courseData) {
     const courseToken = generateCourseToken();
     
     const query = `
-      INSERT INTO courses (id, tenant_id, title, description, course_code, teacher_id, course_token, max_students, start_date, end_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO courses (id, tenant_id, name, description, code, department_id, duration_years)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
       courseId,
       courseData.tenant_id,
-      courseData.title,
+      courseData.name,
       courseData.description || null,
-      courseData.course_code || null,
-      courseData.teacher_id,
-      courseToken,
-      courseData.max_students || 0,
-      courseData.start_date || null,
-      courseData.end_date || null,
+      courseData.code || null,
+      courseData.department_id || null,
+      courseData.duration_years || 1,
     ];
 
     await db.query(query, params);
@@ -38,9 +35,9 @@ export async function getCourseById(courseId, tenantId) {
   const db = getDatabase();
   try {
     const [courses] = await db.query(
-      `SELECT c.*, u.first_name as teacher_first_name, u.last_name as teacher_last_name, u.email as teacher_email
+      `SELECT c.*, d.name as department_name
        FROM courses c
-       JOIN users u ON c.teacher_id = u.id
+       LEFT JOIN departments d ON c.department_id = d.id
        WHERE c.id = ? AND c.tenant_id = ?`,
       [courseId, tenantId]
     );
@@ -51,39 +48,14 @@ export async function getCourseById(courseId, tenantId) {
   }
 }
 
-export async function getTeacherCourses(teacherId, tenantId) {
-  const db = getDatabase();
-  try {
-    const [courses] = await db.query(
-      `SELECT c.*, 
-              COUNT(ce.id) as enrolled_students
-       FROM courses c
-       LEFT JOIN course_enrollments ce ON c.id = ce.course_id AND ce.is_active = 1
-       WHERE c.teacher_id = ? AND c.tenant_id = ?
-       GROUP BY c.id
-       ORDER BY c.created_at DESC`,
-      [teacherId, tenantId]
-    );
-    return courses;
-  } catch (error) {
-    console.error('Error getting teacher courses:', error);
-    throw error;
-  }
-}
-
 export async function getTenantCourses(tenantId) {
   const db = getDatabase();
   try {
     const [courses] = await db.query(
-      `SELECT c.*, 
-              u.first_name as teacher_first_name, 
-              u.last_name as teacher_last_name,
-              COUNT(ce.id) as enrolled_students
+      `SELECT c.*, d.name as department_name
        FROM courses c
-       JOIN users u ON c.teacher_id = u.id
-       LEFT JOIN course_enrollments ce ON c.id = ce.course_id AND ce.is_active = 1
-       WHERE c.tenant_id = ? AND c.is_active = 1
-       GROUP BY c.id
+       LEFT JOIN departments d ON c.department_id = d.id
+       WHERE c.tenant_id = ?
        ORDER BY c.created_at DESC`,
       [tenantId]
     );
@@ -94,59 +66,58 @@ export async function getTenantCourses(tenantId) {
   }
 }
 
+export async function getTeacherCourses(teacherId, tenantId) {
+  const db = getDatabase();
+  try {
+    const [courses] = await db.query(
+      `SELECT c.*, d.name as department_name
+       FROM courses c
+       LEFT JOIN departments d ON c.department_id = d.id
+       WHERE c.tenant_id = ?
+       ORDER BY c.created_at DESC`,
+      [tenantId]
+    );
+    return courses;
+  } catch (error) {
+    console.error('Error getting teacher courses:', error);
+    throw error;
+  }
+}
+
 export async function enrollStudentInCourse(courseId, studentId, courseToken, tenantId) {
   const db = getDatabase();
   try {
-    // Verify course token and get course details
+    // Verify course exists and tenant matches
     const [courses] = await db.query(
-      'SELECT * FROM courses WHERE id = ? AND course_token = ? AND tenant_id = ? AND is_active = 1',
-      [courseId, courseToken, tenantId]
+      'SELECT * FROM courses WHERE id = ? AND tenant_id = ?',
+      [courseId, tenantId]
     );
 
     if (courses.length === 0) {
-      throw new Error('Invalid course token or course not found');
+      throw new Error('Course not found');
     }
 
-    const course = courses[0];
-
     // Check if student is already enrolled
-    const [existingEnrollments] = await db.query(
+    const [existingEnrollment] = await db.query(
       'SELECT * FROM course_enrollments WHERE course_id = ? AND student_id = ?',
       [courseId, studentId]
     );
 
-    if (existingEnrollments.length > 0) {
+    if (existingEnrollment.length > 0) {
       throw new Error('Student already enrolled in this course');
     }
 
-    // Check max students limit
-    if (course.max_students > 0) {
-      const [currentEnrollments] = await db.query(
-        'SELECT COUNT(*) as count FROM course_enrollments WHERE course_id = ? AND is_active = 1',
-        [courseId]
-      );
-
-      if (currentEnrollments[0].count >= course.max_students) {
-        throw new Error('Course has reached maximum student capacity');
-      }
-    }
-
-    // Enroll student
+    // Create enrollment record
     const enrollmentId = uuidv4();
     await db.query(
-      'INSERT INTO course_enrollments (id, tenant_id, course_id, student_id, course_token_used) VALUES (?, ?, ?, ?, ?)',
+      `INSERT INTO course_enrollments (id, tenant_id, course_id, student_id, course_token_used, enrolled_at, is_active)
+       VALUES (?, ?, ?, ?, ?, NOW(), 1)`,
       [enrollmentId, tenantId, courseId, studentId, courseToken]
     );
 
-    // Update current enrollments count
-    await db.query(
-      'UPDATE courses SET current_enrollments = current_enrollments + 1 WHERE id = ?',
-      [courseId]
-    );
-
-    return await getCourseById(courseId, tenantId);
+    return { success: true, enrollmentId };
   } catch (error) {
-    console.error('Error enrolling student in course:', error);
+    console.error('Error enrolling student:', error);
     throw error;
   }
 }
@@ -156,12 +127,11 @@ export async function getStudentCourses(studentId, tenantId) {
   try {
     const [courses] = await db.query(
       `SELECT c.*, 
-              u.first_name as teacher_first_name, 
-              u.last_name as teacher_last_name,
+              d.name as department_name,
               ce.enrolled_at,
               ce.course_token_used
        FROM courses c
-       JOIN users u ON c.teacher_id = u.id
+       LEFT JOIN departments d ON c.department_id = d.id
        JOIN course_enrollments ce ON c.id = ce.course_id
        WHERE ce.student_id = ? AND c.tenant_id = ? AND ce.is_active = 1
        ORDER BY ce.enrolled_at DESC`,
@@ -180,49 +150,38 @@ export async function updateCourse(courseId, courseData, tenantId) {
     const updateFields = [];
     const params = [];
 
-    if (courseData.title !== undefined) {
-      updateFields.push('title = ?');
-      params.push(courseData.title);
+    if (courseData.name !== undefined) {
+      updateFields.push('name = ?');
+      params.push(courseData.name);
     }
     if (courseData.description !== undefined) {
       updateFields.push('description = ?');
       params.push(courseData.description);
     }
-    if (courseData.course_code !== undefined) {
-      updateFields.push('course_code = ?');
-      params.push(courseData.course_code);
+    if (courseData.code !== undefined) {
+      updateFields.push('code = ?');
+      params.push(courseData.code);
     }
-    if (courseData.max_students !== undefined) {
-      updateFields.push('max_students = ?');
-      params.push(courseData.max_students);
+    if (courseData.department_id !== undefined) {
+      updateFields.push('department_id = ?');
+      params.push(courseData.department_id);
     }
-    if (courseData.start_date !== undefined) {
-      updateFields.push('start_date = ?');
-      params.push(courseData.start_date);
-    }
-    if (courseData.end_date !== undefined) {
-      updateFields.push('end_date = ?');
-      params.push(courseData.end_date);
-    }
-    if (courseData.is_active !== undefined) {
-      updateFields.push('is_active = ?');
-      params.push(courseData.is_active);
+    if (courseData.duration_years !== undefined) {
+      updateFields.push('duration_years = ?');
+      params.push(courseData.duration_years);
     }
 
     if (updateFields.length === 0) {
-      throw new Error('No fields to update');
+      return null; // No fields to update
     }
 
-    updateFields.push('updated_at = CURRENT_TIMESTAMP');
     params.push(courseId, tenantId);
-
-    const query = `
-      UPDATE courses 
-      SET ${updateFields.join(', ')}
-      WHERE id = ? AND tenant_id = ?
-    `;
-
-    await db.query(query, params);
+    
+    await db.query(
+      `UPDATE courses SET ${updateFields.join(', ')} WHERE id = ? AND tenant_id = ?`,
+      params
+    );
+    
     return await getCourseById(courseId, tenantId);
   } catch (error) {
     console.error('Error updating course:', error);
@@ -234,7 +193,7 @@ export async function deleteCourse(courseId, tenantId) {
   const db = getDatabase();
   try {
     await db.query(
-      'UPDATE courses SET is_active = 0 WHERE id = ? AND tenant_id = ?',
+      'DELETE FROM courses WHERE id = ? AND tenant_id = ?',
       [courseId, tenantId]
     );
     return true;
@@ -252,7 +211,7 @@ export async function validateCourseToken(courseToken, tenantId) {
   const db = getDatabase();
   try {
     const [courses] = await db.query(
-      'SELECT * FROM courses WHERE course_token = ? AND tenant_id = ? AND is_active = 1',
+      'SELECT * FROM courses WHERE course_token = ? AND tenant_id = ?',
       [courseToken, tenantId]
     );
     return courses[0] || null;

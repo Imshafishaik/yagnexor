@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
-import { LogOut, BookOpen, Calendar, Award, FileText, User, Key } from 'lucide-react';
+import { LogOut, BookOpen, Calendar, Award, FileText, User, Key, Download } from 'lucide-react';
 
 export default function StudentDashboardPage() {
   const navigate = useNavigate();
@@ -168,6 +168,13 @@ export default function StudentDashboardPage() {
             >
               <Key className="text-blue-600" size={20} />
               <span className="text-blue-700 font-medium">Enroll with Token</span>
+            </button>
+            <button
+              onClick={() => navigate('/student-content')}
+              className="flex items-center space-x-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition duration-200"
+            >
+              <Download className="text-purple-600" size={20} />
+              <span className="text-purple-700 font-medium">Learning Materials</span>
             </button>
             <button
               onClick={() => navigate('/attendance')}

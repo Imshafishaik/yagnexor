@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
-import { LogOut, Users, Calendar, BookOpen, Award, FileText, User, CheckCircle } from 'lucide-react';
+import { LogOut, Users, Calendar, BookOpen, Award, FileText, User, CheckCircle, Upload } from 'lucide-react';
 
 export default function TeacherDashboardPage() {
   const navigate = useNavigate();
@@ -166,6 +166,13 @@ export default function TeacherDashboardPage() {
             >
               <BookOpen className="text-green-600" size={20} />
               <span className="text-green-700 font-medium">Manage Courses</span>
+            </button>
+            <button
+              onClick={() => navigate('/subject-content')}
+              className="flex items-center space-x-3 p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition duration-200"
+            >
+              <Upload className="text-indigo-600" size={20} />
+              <span className="text-indigo-700 font-medium">Upload Content</span>
             </button>
             <button
               onClick={() => navigate('/teacher-attendance')}

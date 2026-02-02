@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import api from '../services/api';
 import { 
   Users, 
   UserPlus, 
@@ -54,13 +55,8 @@ export default function ManagerClassManagementPage() {
 
   const fetchClasses = async () => {
     try {
-      const response = await fetch('/api/classes', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setClasses(data.classes || []);
+      const response = await api.get('/classes');
+      setClasses(response.data.classes || []);
     } catch (error) {
       console.error('Error fetching classes:', error);
     } finally {
@@ -70,13 +66,8 @@ export default function ManagerClassManagementPage() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/courses', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setCourses(data.courses || []);
+      const response = await api.get('/courses');
+      setCourses(response.data.courses || []);
     } catch (error) {
       console.error('Error fetching courses:', error);
     }
@@ -84,13 +75,8 @@ export default function ManagerClassManagementPage() {
 
   const fetchAcademicYears = async () => {
     try {
-      const response = await fetch('/api/academic-years', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setAcademicYears(data.academicYears || []);
+      const response = await api.get('/academic-years');
+      setAcademicYears(response.data.academicYears || []);
     } catch (error) {
       console.error('Error fetching academic years:', error);
     }
@@ -98,13 +84,8 @@ export default function ManagerClassManagementPage() {
 
   const fetchFaculty = async () => {
     try {
-      const response = await fetch('/api/faculty', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setFaculty(data.faculty || []);
+      const response = await api.get('/faculty');
+      setFaculty(response.data.faculty || []);
     } catch (error) {
       console.error('Error fetching faculty:', error);
     }
@@ -112,13 +93,8 @@ export default function ManagerClassManagementPage() {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('/api/students', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setStudents(data.students || []);
+      const response = await api.get('/students');
+      setStudents(response.data.students || []);
     } catch (error) {
       console.error('Error fetching students:', error);
     }
@@ -126,13 +102,8 @@ export default function ManagerClassManagementPage() {
 
   const fetchClassSubjects = async (classId) => {
     try {
-      const response = await fetch(`/api/classes/${classId}/subjects`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      return data.subjects || [];
+      const response = await api.get(`/api/classes/${classId}/subjects`);
+      return response.data.subjects || [];
     } catch (error) {
       console.error('Error fetching class subjects:', error);
       return [];
@@ -141,13 +112,8 @@ export default function ManagerClassManagementPage() {
 
   const fetchClassStudents = async (classId) => {
     try {
-      const response = await fetch(`/api/classes/${classId}/students`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      return data.students || [];
+      const response = await api.get(`/api/classes/${classId}/students`);
+      return response.data.students || [];
     } catch (error) {
       console.error('Error fetching class students:', error);
       return [];
@@ -157,16 +123,9 @@ export default function ManagerClassManagementPage() {
   const handleCreateClass = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/classes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(classForm)
-      });
+      const response = await api.post('/classes', classForm);
       
-      if (response.ok) {
+      if (response.status === 201) {
         setShowCreateForm(false);
         setClassForm({
           name: '',
@@ -184,16 +143,9 @@ export default function ManagerClassManagementPage() {
 
   const handleAssignFaculty = async (classId, facultyId) => {
     try {
-      const response = await fetch(`/api/classes/${classId}/assign-faculty`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ faculty_id: facultyId })
-      });
+      const response = await api.post(`/classes/${classId}/assign-faculty`, { faculty_id: facultyId });
       
-      if (response.ok) {
+      if (response.status === 200) {
         setShowAssignFaculty(null);
         fetchClasses();
       }
@@ -204,16 +156,9 @@ export default function ManagerClassManagementPage() {
 
   const handleEnrollStudents = async (classId, studentIds) => {
     try {
-      const response = await fetch(`/api/classes/${classId}/enroll-students`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ student_ids: studentIds })
-      });
+      const response = await api.post(`/classes/${classId}/enroll-students`, { student_ids: studentIds });
       
-      if (response.ok) {
+      if (response.status === 200) {
         setShowEnrollStudents(null);
         fetchClasses();
       }
@@ -224,14 +169,9 @@ export default function ManagerClassManagementPage() {
 
   const handleRemoveStudent = async (classId, studentId) => {
     try {
-      const response = await fetch(`/api/classes/${classId}/students/${studentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await api.delete(`/api/classes/${classId}/students/${studentId}`);
       
-      if (response.ok) {
+      if (response.status === 200) {
         fetchClasses();
       }
     } catch (error) {
@@ -529,7 +469,7 @@ export default function ManagerClassManagementPage() {
                   >
                     <option value="">Select Faculty</option>
                     {faculty.map(fac => (
-                      <option key={fac.id} value={fac.id}>
+                      <option key={fac.id} value={fac.user_id}>
                         {fac.first_name} {fac.last_name} - {fac.specialization}
                       </option>
                     ))}
@@ -582,7 +522,7 @@ export default function ManagerClassManagementPage() {
                     <div className="text-sm text-gray-500">{fac.specialization}</div>
                   </div>
                   <button
-                    onClick={() => handleAssignFaculty(showAssignFaculty, fac.id)}
+                    onClick={() => handleAssignFaculty(showAssignFaculty, fac.user_id)}
                     className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Assign

@@ -10,19 +10,15 @@ const router = express.Router();
 const createSubjectSchema = Joi.object({
   name: Joi.string().required(),
   code: Joi.string().required(),
-  description: Joi.string().optional(),
   course_id: Joi.string().required(),
   credits: Joi.number().integer().min(1).max(10).optional(),
-  is_elective: Joi.boolean().optional(),
 });
 
 const updateSubjectSchema = Joi.object({
   name: Joi.string().optional(),
   code: Joi.string().optional(),
-  description: Joi.string().optional(),
   course_id: Joi.string().optional(),
   credits: Joi.number().integer().min(1).max(10).optional(),
-  is_elective: Joi.boolean().optional(),
 });
 
 // Get all subjects with related data
@@ -113,7 +109,7 @@ router.get('/course/:course_id', async (req, res) => {
 // Create new subject
 router.post('/', validateRequest(createSubjectSchema), async (req, res) => {
   const db = getDatabase();
-  const { name, code, description, course_id, credits, is_elective } = req.validatedBody;
+  const { name, code, course_id, credits } = req.validatedBody;
   
   try {
     // Check if course exists
@@ -128,9 +124,9 @@ router.post('/', validateRequest(createSubjectSchema), async (req, res) => {
 
     const subjectId = uuidv4();
     await db.query(
-      `INSERT INTO subjects (id, tenant_id, name, code, description, course_id, credits, is_elective)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [subjectId, req.tenantId, name, code, description || null, course_id, credits || null, is_elective || false]
+      `INSERT INTO subjects (id, tenant_id, name, code, course_id, credits)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [subjectId, req.tenantId, name, code, course_id, credits || null]
     );
     
     res.status(201).json({ 
@@ -150,7 +146,7 @@ router.post('/', validateRequest(createSubjectSchema), async (req, res) => {
 router.put('/:id', validateRequest(updateSubjectSchema), async (req, res) => {
   const db = getDatabase();
   const { id } = req.params;
-  const { name, code, description, course_id, credits, is_elective } = req.validatedBody;
+  const { name, code, course_id, credits } = req.validatedBody;
   
   try {
     // Check if subject exists
@@ -187,10 +183,6 @@ router.put('/:id', validateRequest(updateSubjectSchema), async (req, res) => {
       updateFields.push('code = ?');
       updateValues.push(code);
     }
-    if (description !== undefined) {
-      updateFields.push('description = ?');
-      updateValues.push(description);
-    }
     if (course_id !== undefined) {
       updateFields.push('course_id = ?');
       updateValues.push(course_id);
@@ -198,10 +190,6 @@ router.put('/:id', validateRequest(updateSubjectSchema), async (req, res) => {
     if (credits !== undefined) {
       updateFields.push('credits = ?');
       updateValues.push(credits);
-    }
-    if (is_elective !== undefined) {
-      updateFields.push('is_elective = ?');
-      updateValues.push(is_elective);
     }
 
     if (updateFields.length === 0) {

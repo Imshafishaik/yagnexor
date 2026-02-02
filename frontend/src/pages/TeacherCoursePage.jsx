@@ -7,6 +7,7 @@ export default function TeacherCoursePage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
@@ -18,11 +19,22 @@ export default function TeacherCoursePage() {
     max_students: '',
     start_date: '',
     end_date: '',
+    department_id: '',
   });
 
   useEffect(() => {
     fetchCourses();
+    fetchDepartments();
   }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await api.get('/departments');
+      setDepartments(response.data.departments || []);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
 
   const fetchCourses = async () => {
     try {
@@ -189,17 +201,36 @@ export default function TeacherCoursePage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Max Students (0 = unlimited)
+                      Department
                     </label>
-                    <input
-                      type="number"
-                      name="max_students"
-                      value={formData.max_students}
+                    <select
+                      name="department_id"
+                      value={formData.department_id}
                       onChange={handleInputChange}
-                      min="0"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Max Students (0 = unlimited)
+                  </label>
+                  <input
+                    type="number"
+                    name="max_students"
+                    value={formData.max_students}
+                    onChange={handleInputChange}
+                    min="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

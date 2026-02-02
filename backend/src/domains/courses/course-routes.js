@@ -18,22 +18,19 @@ const router = express.Router();
 
 // Validation schemas
 const createCourseSchema = Joi.object({
-  title: Joi.string().min(3).required(),
+  name: Joi.string().min(3).required(),
   description: Joi.string().optional(),
-  course_code: Joi.string().optional(),
-  max_students: Joi.number().integer().min(0).optional(),
-  start_date: Joi.date().optional(),
-  end_date: Joi.date().optional(),
+  code: Joi.string().optional(),
+  department_id: Joi.string().optional(),
+  duration_years: Joi.number().integer().min(1).max(10).optional(),
 });
 
 const updateCourseSchema = Joi.object({
-  title: Joi.string().min(3).optional(),
+  name: Joi.string().min(3).optional(),
   description: Joi.string().optional(),
-  course_code: Joi.string().optional(),
-  max_students: Joi.number().integer().min(0).optional(),
-  start_date: Joi.date().optional(),
-  end_date: Joi.date().optional(),
-  is_active: Joi.boolean().optional(),
+  code: Joi.string().optional(),
+  department_id: Joi.string().optional(),
+  duration_years: Joi.number().integer().min(1).max(10).optional(),
 });
 
 const enrollCourseSchema = Joi.object({
@@ -91,12 +88,11 @@ router.get('/student/my-courses', async (req, res) => {
 });
 
 // Create new course (teacher and above)
-router.post('/', requireMinimumRole('teacher'), validateRequest(createCourseSchema), async (req, res) => {
+router.post('/', requireMinimumRole('manager'), validateRequest(createCourseSchema), async (req, res) => {
   try {
     const course = await createCourse({
       ...req.validatedBody,
       tenant_id: req.tenantId,
-      teacher_id: req.user.id,
     });
 
     res.status(201).json({
@@ -120,10 +116,6 @@ router.put('/:id', requireMinimumRole('teacher'), validateRequest(updateCourseSc
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    if (course.teacher_id !== req.user.id && req.user.role !== 'manager' && req.user.role !== 'tenant_admin' && req.user.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Access denied. Only course teacher can update this course.' });
-    }
-
     const updatedCourse = await updateCourse(id, req.validatedBody, req.tenantId);
 
     res.json({
@@ -145,10 +137,6 @@ router.delete('/:id', requireMinimumRole('teacher'), async (req, res) => {
     const course = await getCourseById(id, req.tenantId);
     if (!course) {
       return res.status(404).json({ error: 'Course not found' });
-    }
-
-    if (course.teacher_id !== req.user.id && req.user.role !== 'manager' && req.user.role !== 'tenant_admin' && req.user.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Access denied. Only course teacher can delete this course.' });
     }
 
     await deleteCourse(id, req.tenantId);
