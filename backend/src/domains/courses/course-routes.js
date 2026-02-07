@@ -2,17 +2,32 @@ import express from 'express';
 import Joi from 'joi';
 import { validateRequest } from '../../core/middleware/guards.js';
 import { requireMinimumRole } from '../../core/middleware/role-middleware.js';
-import {
-  createCourse,
+import { getDatabase } from '../../config/database.js';
+import { 
+  createCourse, 
+  updateCourse, 
+  deleteCourse, 
   getCourseById,
-  getTeacherCourses,
   getTenantCourses,
-  enrollStudentInCourse,
+  getTeacherCourses, 
+  enrollStudentInCourse, 
+  getStudentByUserId,
   getStudentCourses,
-  updateCourse,
-  deleteCourse,
-  validateCourseToken
+  validateCourseToken 
 } from '../../core/services/course-service.js';
+
+console.log('🔍 Imported functions:', {
+  createCourse,
+  updateCourse, 
+  deleteCourse, 
+  getCourseById,
+  getTenantCourses,
+  getTeacherCourses, 
+  enrollStudentInCourse, 
+  getStudentByUserId,
+  getStudentCourses,
+  validateCourseToken
+});
 
 const router = express.Router();
 
@@ -79,11 +94,28 @@ router.get('/teacher/my-courses', async (req, res) => {
 // Get student's enrolled courses
 router.get('/student/my-courses', async (req, res) => {
   try {
-    const courses = await getStudentCourses(req.user.id, req.tenantId);
-    res.json({ courses });
+    console.log('🔍 Getting student courses for user:', req.user.id);
+    console.log('🏢 Tenant ID:', req.tenantId);
+    
+    // Add cache-busting headers
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    // Get student ID from user ID
+    const studentId = await getStudentByUserId(req.user.id, req.tenantId);
+    console.log('🎓 Found student ID:', studentId);
+    
+    const courses = await getStudentCourses(studentId, req.tenantId);
+    console.log('📚 Student courses found:', courses?.length || 0);
+    
+    res.json({ 
+      courses,
+      timestamp: new Date().toISOString() // Add timestamp to prevent caching
+    });
   } catch (error) {
-    console.error('Error fetching student courses:', error);
-    res.status(500).json({ error: 'Failed to fetch courses' });
+    console.error('Error getting student courses:', error);
+    res.status(500).json({ error: 'Failed to get student courses' });
   }
 });
 
@@ -170,6 +202,30 @@ router.post('/:id/enroll', requireMinimumRole('student'), validateRequest(enroll
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: 'Failed to enroll in course' });
+  }
+});
+
+// Remove course enrollment (students only)
+router.delete('/:id/enroll', requireMinimumRole('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get student ID from user ID
+    const studentId = await getStudentByUserId(req.user.id, req.tenantId);
+    
+    // Remove enrollment
+    const db = getDatabase();
+    await db.query(
+      'DELETE FROM course_enrollments WHERE course_id = ? AND student_id = ?',
+      [id, studentId]
+    );
+
+    res.json({
+      message: 'Successfully removed from course',
+    });
+  } catch (error) {
+    console.error('Error removing course enrollment:', error);
+    res.status(500).json({ error: 'Failed to remove from course' });
   }
 });
 

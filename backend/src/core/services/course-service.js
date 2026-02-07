@@ -90,23 +90,29 @@ export async function getTeacherCourses(teacherId, tenantId) {
 export async function getStudentByUserId(userId, tenantId) {
   const db = getDatabase();
   try {
+    console.log('🔍 Looking up student for user ID:', userId, 'tenant:', tenantId);
+    
     const [students] = await db.query(
       'SELECT id FROM students WHERE user_id = ? AND tenant_id = ?',
       [userId, tenantId]
     );
     
+    console.log('📊 Found students:', students.length, 'records');
+    
     if (students.length === 0) {
       // Create student record if it doesn't exist
-      console.log('Creating student record for user:', userId);
+      console.log('⚠️ No student record found, creating new one for user:', userId);
       const studentId = uuidv4();
       await db.query(
         `INSERT INTO students (id, tenant_id, user_id, status, created_at)
          VALUES (?, ?, ?, 'active', NOW())`,
         [studentId, tenantId, userId]
       );
+      console.log('✅ Created new student record with ID:', studentId);
       return studentId;
     }
     
+    console.log('✅ Found existing student ID:', students[0].id);
     return students[0].id;
   } catch (error) {
     console.error('Error getting student by user ID:', error);

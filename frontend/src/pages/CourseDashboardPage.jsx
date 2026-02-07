@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
-import { BookOpen, Users, Calendar, Clock, Key, Plus, Search, Filter, ChevronRight, CheckCircle, AlertCircle, Loader, Building, LogOut } from 'lucide-react';
+import { BookOpen, Users, Calendar, Clock, Key, Plus, Search, Filter, ChevronRight, CheckCircle, AlertCircle, Loader, Building, LogOut, Trash2, RefreshCw } from 'lucide-react';
 
 export default function CourseDashboardPage() {
   const { user, logout } = useAuthStore();
@@ -33,12 +33,21 @@ export default function CourseDashboardPage() {
       console.log('👤 User available, fetching courses...');
       fetchCourses();
       if (user.role === 'student') {
+        console.log('🎓 User is student, fetching my courses...');
         fetchMyCourses();
       }
     } else {
       console.log('⏳ User not available yet, waiting...');
     }
   }, [user]);
+
+  // Also fetch my courses when filter changes to 'enrolled'
+  useEffect(() => {
+    if (user?.role === 'student' && filterStatus === 'enrolled') {
+      console.log('🔄 Filter changed to enrolled, refreshing my courses...');
+      fetchMyCourses();
+    }
+  }, [filterStatus, user?.role]);
 
   const fetchCourses = async () => {
     try {
@@ -64,10 +73,20 @@ export default function CourseDashboardPage() {
 
   const fetchMyCourses = async () => {
     try {
+      console.log('🔄 Fetching my courses...');
       const response = await api.get('/courses/student/my-courses');
-      setMyCourses(response.data.courses);
+      console.log('📦 My courses API Response:', response);
+      console.log('📊 My courses data:', response.data);
+      console.log('📈 My courses count:', response.data.courses?.length);
+      
+      setMyCourses(response.data.courses || []);
+      console.log('✅ My courses set:', response.data.courses?.length);
     } catch (error) {
-      console.error('Error fetching my courses:', error);
+      console.error('❌ Error fetching my courses:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      setMyCourses([]);
     }
   };
 
@@ -122,8 +141,16 @@ export default function CourseDashboardPage() {
       console.error('❌ Error status:', error.response?.status);
       console.error('❌ Error data:', error.response?.data);
       
-      // Handle specific foreign key constraint error
-      if (error.response?.data?.error?.includes('foreign key constraint') || 
+      // Still fetch my courses in case enrollment already existed
+      if (user?.role === 'student') {
+        console.log('🔄 Refreshing my courses after enrollment error...');
+        await fetchMyCourses();
+      }
+      
+      // Handle specific errors
+      if (error.response?.data?.error?.includes('already enrolled')) {
+        alert('You are already enrolled in this course. Refreshing your enrolled courses...');
+      } else if (error.response?.data?.error?.includes('foreign key constraint') || 
           error.response?.data?.error?.includes('students')) {
         alert('Enrollment failed: Your student account is not properly set up. Please contact an administrator or ensure you are registered as a student.');
       } else if (error.response?.data?.error) {
@@ -135,6 +162,27 @@ export default function CourseDashboardPage() {
       }
     } finally {
       setEnrolling(false);
+    }
+  };
+
+  const handleRefreshEnrolledCourses = async () => {
+    console.log('🔄 Manual refresh of enrolled courses...');
+    await fetchMyCourses();
+  };
+
+  const handleRemoveCourse = async (courseId) => {
+    if (!window.confirm('Are you sure you want to remove this course from your enrolled courses?')) {
+      return;
+    }
+
+    try {
+      await api.delete(`/courses/${courseId}/enroll`);
+      alert('Successfully removed from course');
+      await fetchMyCourses();
+      await fetchCourses();
+    } catch (error) {
+      console.error('Error removing course:', error);
+      alert('Failed to remove course');
     }
   };
 
@@ -362,13 +410,23 @@ export default function CourseDashboardPage() {
                 </button>
                 <button
                   onClick={() => setFilterStatus('enrolled')}
-                  className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
-                    filterStatus === 'enrolled' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    filterStatus === 'enrolled'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Enrolled
+                  Enrolled ({myCourses.length})
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('🔄 Manual refresh of enrolled courses...');
+                    fetchMyCourses();
+                  }}
+                  className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  title="Refresh enrolled courses"
+                >
+                  <RefreshCw size={16} />
                 </button>
               </div>
             )}
@@ -389,20 +447,37 @@ export default function CourseDashboardPage() {
               <p>First course code: {courses[0].code}</p>
             </div>
           )}
+          <div className="mt-4 space-y-2">
+            <button
+              onClick={handleRefreshEnrolledCourses}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              🔄 Refresh Enrolled Courses
+            </button>
+            <button
+              onClick={() => console.log('My courses state:', myCourses)}
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 ml-2"
+            >
+              📊 Log My Courses
+            </button>
+          </div>
         </div>
 
         {/* Courses Grid */}
-        {courses.length === 0 ? (
+        {filteredCourses.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No courses found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {loading ? 'Loading courses...' : 'No courses available'}
+              {loading ? 'Loading courses...' : 
+               filterStatus === 'enrolled' ? 'No enrolled courses found' : 
+               filterStatus === 'available' ? 'No available courses found' : 
+               'No courses available'}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => {
+            {filteredCourses.map((course) => {
               const status = getCourseStatus(course);
               const StatusIcon = status.icon;
 
@@ -482,6 +557,16 @@ export default function CourseDashboardPage() {
                       >
                         <ChevronRight size={16} />
                         Access Course
+                      </button>
+                    )}
+
+                    {user?.role === 'student' && isEnrolled(course.id) && (
+                      <button
+                        onClick={() => handleRemoveCourse(course.id)}
+                        className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition duration-200 flex items-center justify-center gap-2"
+                      >
+                        <Trash2 size={16} />
+                        Remove Course
                       </button>
                     )}
 
