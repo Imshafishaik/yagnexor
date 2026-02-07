@@ -36,12 +36,14 @@ export default function ManagerClassManagementPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAssignFaculty, setShowAssignFaculty] = useState(null);
   const [showEnrollStudents, setShowEnrollStudents] = useState(null);
+  const [enrollmentError, setEnrollmentError] = useState('');
+  const [editingClass, setEditingClass] = useState(null);
   const [classForm, setClassForm] = useState({
     name: '',
     course_id: '',
     academic_year_id: '',
     class_teacher_id: '',
-    capacity: 30
+    capacity: ''
   });
 
   // Fetch data
@@ -141,6 +143,38 @@ export default function ManagerClassManagementPage() {
     }
   };
 
+  const handleEditClass = (classItem) => {
+    setEditingClass(classItem);
+    setClassForm({
+      name: classItem.name,
+      course_id: classItem.course_id || '',
+      academic_year_id: classItem.academic_year_id || '',
+      class_teacher_id: classItem.class_teacher_id || '',
+      capacity: classItem.capacity || ''
+    });
+  };
+
+  const handleUpdateClass = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.put(`/classes/${editingClass.id}`, classForm);
+      
+      if (response.status === 200) {
+        setEditingClass(null);
+        setClassForm({
+          name: '',
+          course_id: '',
+          academic_year_id: '',
+          class_teacher_id: '',
+          capacity: ''
+        });
+        fetchClasses();
+      }
+    } catch (error) {
+      console.error('Error updating class:', error);
+    }
+  };
+
   const handleAssignFaculty = async (classId, facultyId) => {
     try {
       const response = await api.post(`/classes/${classId}/assign-faculty`, { faculty_id: facultyId });
@@ -156,14 +190,21 @@ export default function ManagerClassManagementPage() {
 
   const handleEnrollStudents = async (classId, studentIds) => {
     try {
+      setEnrollmentError('');
       const response = await api.post(`/classes/${classId}/enroll-students`, { student_ids: studentIds });
       
       if (response.status === 200) {
         setShowEnrollStudents(null);
+        setEnrollmentError('');
         fetchClasses();
       }
     } catch (error) {
       console.error('Error enrolling students:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        setEnrollmentError(error.response.data.message);
+      } else {
+        setEnrollmentError('Failed to enroll students. Please try again.');
+      }
     }
   };
 
@@ -349,7 +390,10 @@ export default function ManagerClassManagementPage() {
                       <UserCheck size={20} />
                     </button>
                     <button
-                      onClick={() => setShowEnrollStudents(classItem.id)}
+                      onClick={() => {
+                        setShowEnrollStudents(classItem.id);
+                        setEnrollmentError('');
+                      }}
                       className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
                       title="Enroll Students"
                     >
@@ -358,6 +402,7 @@ export default function ManagerClassManagementPage() {
                     <button
                       className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                       title="Edit Class"
+                      onClick={() => handleEditClass(classItem)}
                     >
                       <Edit size={20} />
                     </button>
@@ -509,6 +554,55 @@ export default function ManagerClassManagementPage() {
         </div>
       )}
 
+      {/* Edit Class Modal */}
+      {editingClass && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Edit Class</h2>
+            <form onSubmit={handleUpdateClass}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={classForm.name}
+                    onChange={(e) => setClassForm({ ...classForm, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={classForm.capacity}
+                    onChange={(e) => setClassForm({ ...classForm, capacity: parseInt(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setEditingClass(null)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Update Class
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Assign Faculty Modal */}
       {showAssignFaculty && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -547,6 +641,23 @@ export default function ManagerClassManagementPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Enroll Students in Class</h2>
+            
+            {/* Error Display */}
+            {enrollmentError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{enrollmentError}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {getAvailableStudents(classes.find(c => c.id === showEnrollStudents)).map(student => (
                 <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
@@ -564,7 +675,10 @@ export default function ManagerClassManagementPage() {
             </div>
             <div className="flex justify-end mt-6">
               <button
-                onClick={() => setShowEnrollStudents(null)}
+                onClick={() => {
+                  setShowEnrollStudents(null);
+                  setEnrollmentError('');
+                }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Cancel

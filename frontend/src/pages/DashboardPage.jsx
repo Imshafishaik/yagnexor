@@ -83,8 +83,12 @@ export default function DashboardPage() {
   ];
 
   const handleModuleClick = (path) => {
+    console.log('🖱️ Dashboard navigation clicked:', path);
     if (path !== '#') {
+      console.log('🧭 Navigating to:', path);
       navigate(path);
+    } else {
+      console.log('❌ Path is #, not navigating');
     }
   };
 

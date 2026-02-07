@@ -5,6 +5,8 @@ import api from '../services/api';
 export default function AttendancePage() {
   const [attendance, setAttendance] = useState([]);
   const [filteredAttendance, setFilteredAttendance] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -19,16 +21,52 @@ export default function AttendancePage() {
 
   useEffect(() => {
     fetchAttendance();
+    fetchStudents();
+    fetchSubjects();
   }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const response = await api.get('/users');
+      setStudents(response.data.users || []);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const response = await api.get('/subjects');
+      setSubjects(response.data.subjects || []);
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+    }
+  };
+
+  // Helper functions to get names by ID
+  const getStudentName = (studentId) => {
+    const student = students.find(s => s.id === studentId);
+    return student ? `${student.first_name} ${student.last_name}` : studentId;
+  };
+
+  const getSubjectName = (subjectId) => {
+    const subject = subjects.find(s => s.id === subjectId);
+    return subject ? subject.name : subjectId;
+  };
 
   useEffect(() => {
     const filtered = attendance.filter(
-      (a) =>
-        a.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.subject_id?.toLowerCase().includes(searchTerm.toLowerCase())
+      (a) => {
+        const studentName = getStudentName(a.student_id);
+        const subjectName = getSubjectName(a.subject_id);
+        return studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               subjectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               a.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               a.subject_id?.toLowerCase().includes(searchTerm.toLowerCase());
+      }
     );
     setFilteredAttendance(filtered);
-  }, [searchTerm, attendance]);
+  }, [searchTerm, attendance, students, subjects]);
 
   const fetchAttendance = async () => {
     try {
@@ -118,13 +156,13 @@ export default function AttendancePage() {
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search by student ID or subject ID..."
+              placeholder="Search by student name, subject name, or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
             />
           </div>
         </div>
@@ -144,25 +182,35 @@ export default function AttendancePage() {
               </div>
 
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <input
-                  type="text"
+                <select
                   name="student_id"
-                  placeholder="Student ID"
                   value={formData.student_id}
                   onChange={handleInputChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
-                />
+                >
+                  <option value="">Select Student</option>
+                  {students.filter(s => s.role === 'student').map(student => (
+                    <option key={student.id} value={student.id}>
+                      {student.first_name} {student.last_name}
+                    </option>
+                  ))}
+                </select>
 
-                <input
-                  type="text"
+                <select
                   name="subject_id"
-                  placeholder="Subject ID"
                   value={formData.subject_id}
                   onChange={handleInputChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
-                />
+                >
+                  <option value="">Select Subject</option>
+                  {subjects.map(subject => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.name} ({subject.code})
+                    </option>
+                  ))}
+                </select>
 
                 <input
                   type="date"
@@ -271,8 +319,8 @@ export default function AttendancePage() {
               <table className="w-full">
                 <thead className="bg-gray-100 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Student ID</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Subject ID</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Student Name</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Subject Name</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Remarks</th>
@@ -282,8 +330,18 @@ export default function AttendancePage() {
                 <tbody>
                   {filteredAttendance.map((record) => (
                     <tr key={record.id} className="border-b hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 text-sm text-gray-900">{record.student_id}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{record.subject_id}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div>
+                          <div className="font-medium">{getStudentName(record.student_id)}</div>
+                          <div className="text-xs text-gray-500">ID: {record.student_id}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        <div>
+                          <div className="font-medium">{getSubjectName(record.subject_id)}</div>
+                          <div className="text-xs text-gray-500">ID: {record.subject_id}</div>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{record.attendance_date}</td>
                       <td className="px-6 py-4">
                         <span className={`text-xs font-semibold px-3 py-1 rounded-full ${

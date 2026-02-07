@@ -6,6 +6,7 @@ import {
   BookOpen, 
   Plus, 
   Edit, 
+  Edit2,
   Trash2, 
   Search,
   Filter,
@@ -31,6 +32,7 @@ export default function ManagerCourseManagementPage() {
   // Form states
   const [showCreateCourseForm, setShowCreateCourseForm] = useState(false);
   const [showCreateSubjectForm, setShowCreateSubjectForm] = useState(null);
+  const [editingSubject, setEditingSubject] = useState(null);
   const [courseForm, setCourseForm] = useState({
     name: '',
     code: '',
@@ -125,6 +127,41 @@ export default function ManagerCourseManagementPage() {
       }
     } catch (error) {
       console.error('Error creating subject:', error);
+    }
+  };
+
+  const handleEditSubject = (subject) => {
+    setEditingSubject(subject);
+    setSubjectForm({
+      name: subject.name,
+      code: subject.code,
+      credits: subject.credits || 1
+    });
+    setShowCreateSubjectForm(subject.course_id);
+  };
+
+  const handleUpdateSubject = async (courseId) => {
+    try {
+      const response = await api.put(`/subjects/${editingSubject.id}`, subjectForm);
+      
+      if (response.status === 200) {
+        setShowCreateSubjectForm(null);
+        setEditingSubject(null);
+        setSubjectForm({
+          name: '',
+          code: '',
+          credits: 1
+        });
+        // Refresh the expanded course data
+        if (expandedCourse === courseId) {
+          const subjectsData = await fetchCourseSubjects(courseId);
+          setCourses(prev => prev.map(course => 
+            course.id === courseId ? { ...course, subjects: subjectsData } : course
+          ));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating subject:', error);
     }
   };
 
@@ -382,13 +419,22 @@ export default function ManagerCourseManagementPage() {
                                 </span>
                               )}
                             </div>
-                            <button
-                              onClick={() => handleDeleteSubject(course.id, subject.id)}
-                              className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                              title="Remove Subject"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleEditSubject(subject)}
+                                className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+                                title="Edit Subject"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSubject(course.id, subject.id)}
+                                className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                title="Remove Subject"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
                         ))
                       ) : (
@@ -503,10 +549,16 @@ export default function ManagerCourseManagementPage() {
       {showCreateSubjectForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Add Subject to Course</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              {editingSubject ? 'Edit Subject' : 'Add Subject to Course'}
+            </h2>
             <form onSubmit={(e) => {
               e.preventDefault();
-              handleCreateSubject(showCreateSubjectForm);
+              if (editingSubject) {
+                handleUpdateSubject(showCreateSubjectForm);
+              } else {
+                handleCreateSubject(showCreateSubjectForm);
+              }
             }}>
               <div className="space-y-4">
                 <div>
@@ -548,7 +600,15 @@ export default function ManagerCourseManagementPage() {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => setShowCreateSubjectForm(null)}
+                  onClick={() => {
+                    setShowCreateSubjectForm(null);
+                    setEditingSubject(null);
+                    setSubjectForm({
+                      name: '',
+                      code: '',
+                      credits: 1
+                    });
+                  }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   Cancel
@@ -557,7 +617,7 @@ export default function ManagerCourseManagementPage() {
                   type="submit"
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Add Subject
+                  {editingSubject ? 'Update Subject' : 'Add Subject'}
                 </button>
               </div>
             </form>

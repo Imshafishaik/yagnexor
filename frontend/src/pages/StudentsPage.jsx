@@ -37,12 +37,12 @@ export default function StudentsPage() {
   }, []);
 
   useEffect(() => {
-    const filtered = students.filter(
-      (student) =>
+    const filtered = students.filter((student) =>
         student.enrollment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.id?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
+    console.log(".......filtered",filtered);
+    
     setFilteredStudents(filtered);
   }, [searchTerm, students]);
 

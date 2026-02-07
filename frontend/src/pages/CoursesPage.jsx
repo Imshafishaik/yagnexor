@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Plus, Edit2, Trash2, BookOpen, GraduationCap, Building, Clock, CreditCard, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, BookOpen, GraduationCap, Building, Clock, Users } from 'lucide-react';
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
@@ -15,7 +15,6 @@ export default function CoursesPage() {
     description: '',
     department_id: '',
     duration_years: '',
-    credits: '',
   });
 
   useEffect(() => {
@@ -73,7 +72,6 @@ export default function CoursesPage() {
       description: course.description || '',
       department_id: course.department_id || '',
       duration_years: course.duration_years || '',
-      credits: course.credits || '',
     });
     setShowForm(true);
   };
@@ -98,7 +96,6 @@ export default function CoursesPage() {
       description: '',
       department_id: '',
       duration_years: '',
-      credits: '',
     });
   };
 
@@ -153,11 +150,10 @@ export default function CoursesPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Course</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Code</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Department</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Duration</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Credits</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Classes</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
@@ -198,14 +194,6 @@ export default function CoursesPage() {
                           <Clock className="text-gray-400" size={16} />
                           <span className="text-sm text-gray-600">
                             {course.duration_years ? `${course.duration_years} years` : 'N/A'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="text-gray-400" size={16} />
-                          <span className="text-sm text-gray-600">
-                            {course.credits || 'N/A'}
                           </span>
                         </div>
                       </td>
@@ -322,20 +310,6 @@ export default function CoursesPage() {
                       onChange={(e) => setFormData({ ...formData, duration_years: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="e.g., 4"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Credits
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={formData.credits}
-                      onChange={(e) => setFormData({ ...formData, credits: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., 120"
                     />
                   </div>
 

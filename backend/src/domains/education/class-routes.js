@@ -379,6 +379,25 @@ router.post('/:id/enroll-students', async (req, res) => {
       });
     }
 
+    // Check if any students are already enrolled in another class
+    const [alreadyEnrolledStudents] = await db.query(
+      `SELECT s.id, u.first_name, u.last_name, s.class_id 
+       FROM students s
+       JOIN users u ON s.user_id = u.id
+       WHERE s.id IN (${student_ids.map(() => '?').join(',')}) 
+       AND s.class_id IS NOT NULL 
+       AND s.class_id != ? 
+       AND s.tenant_id = ?`,
+      [...student_ids, id, req.tenantId]
+    );
+
+    if (alreadyEnrolledStudents.length > 0) {
+      const studentNames = alreadyEnrolledStudents.map(s => `${s.first_name} ${s.last_name}`).join(', ');
+      return res.status(400).json({ 
+        message: `Cannot enroll students who are already assigned to another class: ${studentNames}` 
+      });
+    }
+
     // Enroll students
     for (const studentId of student_ids) {
       await db.query(

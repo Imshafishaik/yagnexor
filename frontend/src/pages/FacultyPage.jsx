@@ -5,6 +5,8 @@ import api from '../services/api';
 export default function FacultyPage() {
   const [faculty, setFaculty] = useState([]);
   const [filteredFaculty, setFilteredFaculty] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -20,14 +22,37 @@ export default function FacultyPage() {
 
   useEffect(() => {
     fetchFaculty();
+    fetchUsers();
+    fetchDepartments();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get('/users');
+      setUsers(response.data.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await api.get('/departments');
+      setDepartments(response.data.departments || []);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
 
   useEffect(() => {
     const filtered = faculty.filter(
       (f) =>
-        f.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         f.qualification?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.specialization?.toLowerCase().includes(searchTerm.toLowerCase())
+        f.specialization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.id?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredFaculty(filtered);
   }, [searchTerm, faculty]);
@@ -136,7 +161,7 @@ export default function FacultyPage() {
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search by qualification, specialization..."
+              placeholder="Search by name, email, qualification, specialization..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -162,23 +187,34 @@ export default function FacultyPage() {
 
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
+                  <select
                     name="user_id"
-                    placeholder="User ID"
                     value={formData.user_id}
                     onChange={handleInputChange}
                     required
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                  <input
-                    type="text"
+                  >
+                    <option value="">Select User</option>
+                    {users.filter(u => u.role === 'faculty' || u.role === 'teacher').map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.first_name} {user.last_name} ({user.email})
+                      </option>
+                    ))}
+                  </select>
+                  <select
                     name="department_id"
-                    placeholder="Department ID"
                     value={formData.department_id}
                     onChange={handleInputChange}
+                    required
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -254,6 +290,8 @@ export default function FacultyPage() {
               <table className="w-full">
                 <thead className="bg-gray-100 border-b">
                   <tr>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Qualification</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Specialization</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Phone</th>
@@ -265,6 +303,11 @@ export default function FacultyPage() {
                 <tbody>
                   {filteredFaculty.map((f) => (
                     <tr key={f.id} className="border-b hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div className="font-medium">{f.first_name} {f.last_name}</div>
+                        <div className="text-xs text-gray-500">ID: {f.user_id}</div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{f.email}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{f.qualification}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{f.specialization}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{f.phone}</td>

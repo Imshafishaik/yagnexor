@@ -52,7 +52,10 @@ export async function getTenantCourses(tenantId) {
   const db = getDatabase();
   try {
     const [courses] = await db.query(
-      `SELECT c.*, d.name as department_name
+      `SELECT c.*, 
+              d.name as department_name,
+              (SELECT COUNT(*) FROM classes cl WHERE cl.course_id = c.id AND cl.tenant_id = c.tenant_id) as class_count,
+              (SELECT COUNT(*) FROM subjects s WHERE s.course_id = c.id AND s.tenant_id = c.tenant_id) as subject_count
        FROM courses c
        LEFT JOIN departments d ON c.department_id = d.id
        WHERE c.tenant_id = ?
@@ -84,9 +87,39 @@ export async function getTeacherCourses(teacherId, tenantId) {
   }
 }
 
-export async function enrollStudentInCourse(courseId, studentId, courseToken, tenantId) {
+export async function getStudentByUserId(userId, tenantId) {
   const db = getDatabase();
   try {
+    const [students] = await db.query(
+      'SELECT id FROM students WHERE user_id = ? AND tenant_id = ?',
+      [userId, tenantId]
+    );
+    
+    if (students.length === 0) {
+      // Create student record if it doesn't exist
+      console.log('Creating student record for user:', userId);
+      const studentId = uuidv4();
+      await db.query(
+        `INSERT INTO students (id, tenant_id, user_id, status, created_at)
+         VALUES (?, ?, ?, 'active', NOW())`,
+        [studentId, tenantId, userId]
+      );
+      return studentId;
+    }
+    
+    return students[0].id;
+  } catch (error) {
+    console.error('Error getting student by user ID:', error);
+    throw error;
+  }
+}
+
+export async function enrollStudentInCourse(courseId, userId, courseToken, tenantId) {
+  const db = getDatabase();
+  try {
+    // First get the student ID from user ID
+    const studentId = await getStudentByUserId(userId, tenantId);
+    
     // Verify course exists and tenant matches
     const [courses] = await db.query(
       'SELECT * FROM courses WHERE id = ? AND tenant_id = ?',

@@ -16,7 +16,7 @@ router.get('/class/:class_id', async (req, res) => {
       `SELECT s.id, s.roll_number, u.first_name, u.last_name, u.email 
        FROM students s 
        JOIN users u ON s.user_id = u.id 
-       WHERE s.class_id = ? AND s.tenant_id = ? AND s.status = 'active'
+       WHERE s.class_id = ? AND s.tenant_id = ? AND s.status = 'ACTIVE'
        ORDER BY s.roll_number, u.first_name`,
       [class_id, req.tenantId]
     );
@@ -25,9 +25,10 @@ router.get('/class/:class_id', async (req, res) => {
     let existingAttendance = [];
     if (date) {
       const [attendance] = await db.query(
-        `SELECT student_id, status, remarks 
-         FROM attendance_records 
-         WHERE class_id = ? AND attendance_date = ? AND tenant_id = ?`,
+        `SELECT ar.student_id, ar.status, ar.remarks 
+         FROM attendance_records ar
+         JOIN students s ON ar.student_id = s.id
+         WHERE s.class_id = ? AND ar.attendance_date = ? AND ar.tenant_id = ?`,
         [class_id, date, req.tenantId]
       );
       existingAttendance = attendance;
@@ -66,9 +67,11 @@ router.post('/class/:class_id', async (req, res) => {
     await db.query('START TRANSACTION');
 
     try {
-      // Delete any existing attendance for this class on this date
+      // Delete any existing attendance for students in this class on this date
       await db.query(
-        'DELETE FROM attendance_records WHERE class_id = ? AND attendance_date = ? AND tenant_id = ?',
+        `DELETE ar FROM attendance_records ar
+         JOIN students s ON ar.student_id = s.id
+         WHERE s.class_id = ? AND ar.attendance_date = ? AND ar.tenant_id = ?`,
         [class_id, attendance_date, req.tenantId]
       );
 
@@ -76,18 +79,16 @@ router.post('/class/:class_id', async (req, res) => {
       for (const record of attendance_records) {
         const attendanceId = uuidv4();
         await db.query(
-          `INSERT INTO attendance_records (id, tenant_id, student_id, class_id, subject_id, attendance_date, status, remarks, teacher_remarks)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO attendance_records (id, tenant_id, student_id, subject_id, attendance_date, status, remarks)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             attendanceId, 
             req.tenantId, 
             record.student_id, 
-            class_id, 
             subject_id || null, 
             attendance_date, 
             record.status, 
-            record.remarks || null, 
-            teacher_remarks || null
+            record.remarks || null
           ]
         );
       }
@@ -115,7 +116,7 @@ router.get('/teacher/classes', async (req, res) => {
 
   try {
     const [classes] = await db.query(
-      `SELECT c.id, c.name, c.section, c.academic_year_id 
+      `SELECT c.id, c.name, c.academic_year_id 
        FROM classes c 
        WHERE c.class_teacher_id = ? AND c.tenant_id = ?`,
       [teacher_id, req.tenantId]
@@ -139,10 +140,10 @@ router.get('/class/:class_id/history', async (req, res) => {
       SELECT ar.attendance_date, COUNT(*) as total_students,
              SUM(CASE WHEN ar.status = 'PRESENT' THEN 1 ELSE 0 END) as present,
              SUM(CASE WHEN ar.status = 'ABSENT' THEN 1 ELSE 0 END) as absent,
-             SUM(CASE WHEN ar.status = 'LATE' THEN 1 ELSE 0 END) as late,
-             ar.teacher_remarks
+             SUM(CASE WHEN ar.status = 'LATE' THEN 1 ELSE 0 END) as late
       FROM attendance_records ar
-      WHERE ar.class_id = ? AND ar.tenant_id = ?
+      JOIN students s ON ar.student_id = s.id
+      WHERE s.class_id = ? AND ar.tenant_id = ?
     `;
     const params = [class_id, req.tenantId];
 
@@ -155,7 +156,7 @@ router.get('/class/:class_id/history', async (req, res) => {
       params.push(date_to);
     }
 
-    query += ' GROUP BY ar.attendance_date, ar.teacher_remarks ORDER BY ar.attendance_date DESC LIMIT ?';
+    query += ' GROUP BY ar.attendance_date ORDER BY ar.attendance_date DESC LIMIT ?';
     params.push(parseInt(limit));
 
     const [records] = await db.query(query, params);
@@ -182,7 +183,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ message: 'Attendance marked', attendance_id: attendanceId });
   } catch (error) {
     console.error('Error marking attendance:', error);
-    res.status(500).json({ error: 'Failed to mark attendance' });
+    res.status(500).json({ error: 'Failed to mark attendance' }); 
   }
 });
 

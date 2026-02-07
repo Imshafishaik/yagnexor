@@ -164,7 +164,9 @@ router.post('/:id/enroll', requireMinimumRole('student'), validateRequest(enroll
     });
   } catch (error) {
     console.error('Error enrolling in course:', error);
-    if (error.message.includes('Invalid course token') || error.message.includes('already enrolled') || error.message.includes('maximum student capacity')) {
+    if (error.message.includes('Invalid course token') || 
+        error.message.includes('already enrolled') || 
+        error.message.includes('maximum student capacity')) {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: 'Failed to enroll in course' });

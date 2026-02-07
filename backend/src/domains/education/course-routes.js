@@ -33,16 +33,14 @@ router.get('/', async (req, res) => {
     const [courses] = await db.query(`
       SELECT c.*, 
              d.name as department_name,
-             COUNT(cl.id) as class_count,
-             COUNT(s.id) as subject_count
+             (SELECT COUNT(*) FROM classes cl WHERE cl.course_id = c.id AND cl.tenant_id = c.tenant_id) as class_count,
+             (SELECT COUNT(*) FROM subjects s WHERE s.course_id = c.id AND s.tenant_id = c.tenant_id) as subject_count
       FROM courses c
       LEFT JOIN departments d ON c.department_id = d.id
-      LEFT JOIN classes cl ON c.id = cl.course_id AND cl.tenant_id = c.tenant_id
-      LEFT JOIN subjects s ON c.id = s.course_id AND s.tenant_id = c.tenant_id
       WHERE c.tenant_id = ?
-      GROUP BY c.id
       ORDER BY c.name
     `, [tenantId]);
+    
     res.json({ courses });
   } catch (error) {
     console.error('Error fetching courses:', error);

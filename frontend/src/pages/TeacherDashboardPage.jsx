@@ -24,19 +24,35 @@ export default function TeacherDashboardPage() {
 
     const fetchTeacherData = async () => {
       try {
-        // For now, use mock data to avoid API errors
-        // In a real implementation, you would fetch teacher's classes and students
-        setTeacherInfo({ classes: [] });
+        // Fetch teacher's assigned classes
+        const response = await api.get(`/attendance/teacher/classes?teacher_id=${user.id}`);
+        const classesData = response.data.classes || [];
+        
+        setTeacherInfo({ classes: classesData });
 
-        // Mock stats for now - in real app, these would come from API
+        // Calculate stats based on actual data
+        const totalStudents = classesData.reduce((sum, cls) => {
+          // For now, we'll need to fetch student count for each class
+          // In a real implementation, you might want to include this in the API response
+          return sum + 0; // Placeholder
+        }, 0);
+
+        setStats({
+          classes: classesData.length,
+          students: totalStudents,
+          attendanceToday: 0, // Would need separate API call
+          pendingAssignments: 3, // Would need separate API call
+        });
+      } catch (error) {
+        console.error('Error fetching teacher data:', error);
+        // Fallback to empty data
+        setTeacherInfo({ classes: [] });
         setStats({
           classes: 0,
           students: 0,
           attendanceToday: 0,
-          pendingAssignments: 3,
+          pendingAssignments: 0,
         });
-      } catch (error) {
-        console.error('Error fetching teacher data:', error);
       } finally {
         setLoading(false);
       }
