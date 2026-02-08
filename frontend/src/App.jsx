@@ -47,26 +47,35 @@ function App() {
           const persistedUser = useAuthStore.getState().user;
           const persistedAuth = useAuthStore.getState().isAuthenticated;
           
-          if (persistedUser && persistedAuth) {
+        //   if (persistedUser && persistedAuth) {
+        //     console.log("App useEffect - using persisted state");
+        //     // Clear tokens immediately to force fresh login
+        //     console.log("App useEffect - clearing old tokens to force fresh login");
+        //     localStorage.removeItem('access_token');
+        //     localStorage.removeItem('refresh_token');
+        //     useAuthStore.getState().logout();
+        //     setAuthChecked(true);
+        //   } else {
+        //     console.log("App useEffect - checking auth with valid token");
+        //     checkAuth();
+        //     setAuthChecked(true);
+        //   }
+        // } else {
+        //   console.log("App useEffect - token expired, clearing tokens");
+        //   localStorage.removeItem('access_token');
+        //   localStorage.removeItem('refresh_token');
+        //   useAuthStore.getState().logout();
+        //   setAuthChecked(true);
+        // }
+        if (persistedUser && persistedAuth) {
             console.log("App useEffect - using persisted state");
-            // Clear tokens immediately to force fresh login
-            console.log("App useEffect - clearing old tokens to force fresh login");
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            useAuthStore.getState().logout();
             setAuthChecked(true);
           } else {
             console.log("App useEffect - checking auth with valid token");
             checkAuth();
-            setAuthChecked(true);
-          }
-        } else {
-          console.log("App useEffect - token expired, clearing tokens");
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          useAuthStore.getState().logout();
           setAuthChecked(true);
         }
+      }
       } catch (error) {
         console.log("App useEffect - invalid token format, clearing tokens");
         localStorage.removeItem('access_token');
