@@ -3,7 +3,7 @@ import Joi from 'joi';
 
 export const rateLimitMiddleware = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '200'), // Increased to 200 requests
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '500'), // Increased to 200 requests
   message: 'Too many requests, please try again later',
   standardHeaders: true,
   legacyHeaders: false,

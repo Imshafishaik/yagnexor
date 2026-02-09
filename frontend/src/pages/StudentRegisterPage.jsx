@@ -1,11 +1,22 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, User, Mail, Lock, Eye, EyeOff, CheckCircle, AlertCircle, UserPlus } from 'lucide-react';
+import api from '../services/api';
 
 export default function StudentRegisterPage() {
+  const { token } = useParams();
   const navigate = useNavigate();
   const { studentRegister, isLoading, error } = useAuthStore();
+  
+  const [invitationData, setInvitationData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState(false);
+  const [localError, setLocalError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isTokenBased, setIsTokenBased] = useState(false);
+  
   const [formData, setFormData] = useState({
     tenantDomain: '',
     email: '',
@@ -17,8 +28,40 @@ export default function StudentRegisterPage() {
     address: '',
     dateOfBirth: '',
   });
-  const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Verify registration token on component mount
+  useEffect(() => {
+    if (token) {
+      setIsTokenBased(true);
+      verifyToken();
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
+
+  const verifyToken = async () => {
+    try {
+      const response = await api.get(`/auth/verify-student-token/${token}`);
+      
+      if (response.data.valid) {
+        setInvitationData(response.data.invitation);
+        setFormData(prev => ({
+          ...prev,
+          firstName: response.data.invitation.first_name,
+          lastName: response.data.invitation.last_name,
+          email: response.data.invitation.email,
+        }));
+      } else {
+        setLocalError(response.data.message || 'Invalid or expired registration link');
+      }
+    } catch (error) {
+      console.error('Token verification error:', error);
+      setLocalError('Invalid or expired registration link');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,11 +69,14 @@ export default function StudentRegisterPage() {
       ...prev,
       [name]: value,
     }));
+    setLocalError('');
+    setSuccess('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError('');
+    setSuccess('');
 
     if (formData.password.length < 8) {
       setLocalError('Password must be at least 8 characters');
@@ -42,25 +88,49 @@ export default function StudentRegisterPage() {
       return;
     }
 
+    setRegistering(true);
+
     try {
-      await studentRegister(
-        formData.tenantDomain,
-        formData.email,
-        formData.password,
-        formData.firstName,
-        formData.lastName,
-        null, // rollNumber - removed
-        null, // classId - can be added later
-        formData.phone,
-        formData.address,
-        formData.dateOfBirth
-      );
-      setSuccessMessage('Registration successful! Please login with your credentials.');
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    } catch (err) {
-      setLocalError(err.response?.data?.error || 'Student registration failed');
+      if (isTokenBased && token) {
+        // Token-based registration
+        const response = await api.post(`/auth/complete-student-registration/${token}`, {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+        });
+        
+        setSuccess('Registration completed successfully! Redirecting to login...');
+        
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      } else {
+        // Regular registration
+        await studentRegister(
+          formData.tenantDomain,
+          formData.email,
+          formData.password,
+          formData.firstName,
+          formData.lastName,
+          null, // rollNumber - removed
+          null, // classId - can be added later
+          formData.phone,
+          formData.address,
+          formData.dateOfBirth
+        );
+        setSuccessMessage('Registration successful! Please login with your credentials.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Registration failed. Please try again.';
+      setLocalError(errorMessage);
+    } finally {
+      setRegistering(false);
     }
   };
 

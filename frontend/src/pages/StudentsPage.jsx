@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Search, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import StudentInvitationModal from '../components/StudentInvitationModal';
 
 export default function StudentsPage() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   console.log(".......students",students);
   const [filteredStudents, setFilteredStudents] = useState([]);
@@ -12,6 +15,7 @@ export default function StudentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [users, setUsers] = useState([]);
   console.log(".......users",users);
   
@@ -28,6 +32,15 @@ export default function StudentsPage() {
     address: '',
   });
   console.log(".......formData",formData);
+
+  // Generate random enrollment number
+  const generateEnrollmentNumber = () => {
+    const currentYear = new Date().getFullYear();
+    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const enrollmentNum = `ENR${currentYear}${randomNum}`;
+    console.log('🔢 Generated enrollment number:', enrollmentNum);
+    return enrollmentNum;
+  };
   
   useEffect(() => {
     fetchStudents();
@@ -88,6 +101,12 @@ export default function StudentsPage() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Debug gender field changes
+    if (name === 'gender') {
+      console.log('🔄 Gender changed:', { from: formData.gender, to: value });
+    }
+    
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -109,10 +128,7 @@ export default function StudentsPage() {
       setError('Academic Year ID is required');
       return false;
     }
-    if (!formData.enrollment_number.trim()) {
-      setError('Enrollment Number is required');
-      return false;
-    }
+    // Enrollment number is auto-generated, no validation needed
     if (!formData.date_of_birth) {
       setError('Date of Birth is required');
       return false;
@@ -148,7 +164,7 @@ export default function StudentsPage() {
         user_id: '',
         class_id: '',
         academic_year_id: '',
-        enrollment_number: '',
+        enrollment_number: generateEnrollmentNumber(),
         date_of_birth: '',
         gender: 'Male',
         phone: '',
@@ -163,7 +179,15 @@ export default function StudentsPage() {
   };
 
   const handleEdit = (student) => {
-    setFormData(student);
+    console.log('📝 Editing student:', student);
+    const updatedFormData = {
+      ...student,
+      enrollment_number: student.enrollment_number || generateEnrollmentNumber(),
+      gender: student.gender || 'Male', // Ensure gender has default value
+      date_of_birth: student.date_of_birth ? student.date_of_birth.split('T')[0] : '' // Format date for HTML input
+    };
+    console.log('📝 Updated form data for edit:', updatedFormData);
+    setFormData(updatedFormData);
     setEditingId(student.id);
     setShowForm(true);
   };
@@ -192,26 +216,39 @@ export default function StudentsPage() {
             </h1>
             <p className="text-gray-600 mt-1">Manage student admissions and records</p>
           </div>
-          <button
-            onClick={() => {
-              setShowForm(true);
-              setEditingId(null);
-              setFormData({
-                user_id: '',
-                class_id: '',
-                academic_year_id: '',
-                enrollment_number: '',
-                date_of_birth: '',
-                gender: 'Male',
-                phone: '',
-                address: '',
-              });
-            }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
-          >
-            <Plus size={20} />
-            Add Student
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                console.log('🚀 Opening new student form...');
+                const newFormData = {
+                  user_id: '',
+                  class_id: '',
+                  academic_year_id: '',
+                  enrollment_number: generateEnrollmentNumber(),
+                  date_of_birth: '',
+                  gender: 'Male',
+                  phone: '',
+                  address: '',
+                };
+                console.log('📝 New form data:', newFormData);
+                setShowForm(true);
+                setEditingId(null);
+                setFormData(newFormData);
+              }}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+            >
+              <Plus size={20} />
+              Add Student
+            </button>
+            <button
+              onClick={() => setShowInvitationModal(true)}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"
+              title="Send Student Registration Invitation"
+            >
+              <Mail size={20} />
+              Send Invitation
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -309,15 +346,31 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    name="enrollment_number"
-                    placeholder="Enrollment Number *"
-                    value={formData.enrollment_number}
-                    onChange={handleInputChange}
-                    required
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="enrollment_number"
+                      placeholder="Enrollment Number *"
+                      value={formData.enrollment_number}
+                      onChange={handleInputChange}
+                      readOnly
+                      required
+                      className="px-4 py-2 pr-20 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    />
+                    {(!editingId || !formData.enrollment_number) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newEnrollmentNum = generateEnrollmentNumber();
+                          console.log('🔄 Regenerating enrollment number:', newEnrollmentNum);
+                          setFormData({...formData, enrollment_number: newEnrollmentNum});
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Regenerate
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="date"
                     name="date_of_birth"
@@ -442,6 +495,12 @@ export default function StudentsPage() {
           )}
         </div>
       </div>
+
+      {/* Student Invitation Modal */}
+      <StudentInvitationModal 
+        isOpen={showInvitationModal}
+        onClose={() => setShowInvitationModal(false)}
+      />
     </div>
   );
 }

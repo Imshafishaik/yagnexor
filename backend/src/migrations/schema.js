@@ -324,6 +324,25 @@ export const migrations = [
         UNIQUE KEY unique_enrollment (course_id, student_id),
         INDEX idx_student_id (student_id)
       );
+
+      CREATE TABLE IF NOT EXISTS student_registrations (
+        id VARCHAR(36) PRIMARY KEY,
+        tenant_id VARCHAR(36) NOT NULL,
+        first_name VARCHAR(50) NOT NULL,
+        last_name VARCHAR(50) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        registration_token VARCHAR(36) NOT NULL UNIQUE,
+        expires_at TIMESTAMP NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending', -- pending, completed, expired
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        
+        FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+        INDEX idx_email (email),
+        INDEX idx_token (registration_token),
+        INDEX idx_status (status),
+        INDEX idx_expires (expires_at)
+      );
     `,
   },
 ];

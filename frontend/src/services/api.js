@@ -30,18 +30,27 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle any 401 error immediately by clearing tokens
+    // Handle 401 error only for actual authentication failures
     if (error.response?.status === 401) {
-      console.log('401 error detected, clearing tokens and redirecting to login');
-      console.log('Error details:', error.response?.data);
+      console.log('401 error detected:', error.response?.data);
       
-      // Clear all tokens and auth state
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      useAuthStore.getState().logout();
-      
-      // Redirect to login immediately
-      window.location.href = '/login';
+      // Only logout if it's a genuine authentication failure
+      // Don't logout for role-based access denials
+      if (error.response?.data?.error === 'User role not found' || 
+          error.response?.data?.error === 'Invalid token' ||
+          error.response?.data?.error === 'Token expired') {
+        console.log('Authentication failure, clearing tokens and redirecting to login');
+        
+        // Clear all tokens and auth state
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        useAuthStore.getState().logout();
+        
+        // Redirect to login immediately
+        window.location.href = '/login';
+      } else {
+        console.log('Access denied but not logging out:', error.response?.data);
+      }
       return Promise.reject(error);
     }
 

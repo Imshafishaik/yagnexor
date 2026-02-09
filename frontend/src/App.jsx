@@ -5,6 +5,7 @@ import PrivateRoute from './components/PrivateRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import StudentRegisterPage from './pages/StudentRegisterPage';
+import ManagerStudentRegistrationPage from './pages/ManagerStudentRegistrationPage';
 import FacultyRegisterPage from './pages/FacultyRegisterPage';
 import RoleBasedDashboard from './components/RoleBasedDashboard';
 import StudentsPage from './pages/StudentsPage';
@@ -75,7 +76,7 @@ function App() {
             checkAuth();
           setAuthChecked(true);
         }
-      }
+      } 
       } catch (error) {
         console.log("App useEffect - invalid token format, clearing tokens");
         localStorage.removeItem('access_token');
@@ -121,16 +122,16 @@ function App() {
 
   console.log("App render - authChecked:", authChecked, "isAuthenticated:", isAuthenticated, "user:", user);
 
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
+  // if (!authChecked) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+  //         <p className="mt-4 text-gray-600">Checking authentication...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <Router>
@@ -147,6 +148,10 @@ function App() {
         <Route 
           path="/student-register" 
           element={!isAuthenticated ? <StudentRegisterPage /> : <Navigate to="/dashboard" replace />} 
+        />
+        <Route 
+          path="/manager-student-registration" 
+          element={isAuthenticated ? <PrivateRoute><ManagerStudentRegistrationPage /></PrivateRoute> : <Navigate to="/login" replace />} 
         />
         <Route 
           path="/faculty-register" 

@@ -7,6 +7,7 @@ import { findUserByEmail, createUser, verifyPassword, getTenantByDomain } from '
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../core/auth/token-manager.js';
 import { validateRequest } from '../../core/middleware/guards.js';
 import { authMiddleware, tenantScopeMiddleware } from '../../core/middleware/api-guard.js';
+import studentRegistrationRoutes from './student-registration-routes.js';
 
 const router = Router();
 
@@ -343,5 +344,8 @@ router.post('/student-register', validateRequest(studentRegisterSchema), async (
     res.status(500).json({ error: 'Student registration failed' });
   }
 });
+
+// Use student registration routes (auth middleware applied directly in the routes file)
+router.use(studentRegistrationRoutes);
 
 export default router;
