@@ -27,6 +27,7 @@ import ManagerCourseManagementPage from './pages/ManagerCourseManagementPage';
 import ManagerDepartmentManagementPage from './pages/ManagerDepartmentManagementPage';
 import SubjectContentPage from './pages/SubjectContentPage';
 import StudentContentPage from './pages/StudentContentPage';
+import ClassSchedulePage from './pages/ClassSchedulePage';
 
 function App() {
   const { checkAuth, user, isAuthenticated } = useAuthStore();
@@ -238,6 +239,10 @@ function App() {
         <Route
           path="/student-content"
           element={isAuthenticated ? <PrivateRoute><StudentContentPage /></PrivateRoute> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/class-schedule"
+          element={isAuthenticated ? <PrivateRoute><ClassSchedulePage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         
         {/* Default routes - redirect based on authentication status */}

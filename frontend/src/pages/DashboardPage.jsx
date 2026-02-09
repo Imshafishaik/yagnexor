@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
-import { Users, BookOpen, LogOut, Users2, BarChart3, FileText, DollarSign, GraduationCap, Library, Building, Upload } from 'lucide-react';
+import { Users, BookOpen, LogOut, Users2, BarChart3, FileText, DollarSign, GraduationCap, Library, Building, Upload, Calendar } from 'lucide-react';
 
 export default function DashboardPage() {
   console.log("DashboardPage component rendering...");
@@ -76,6 +76,7 @@ export default function DashboardPage() {
     { name: 'Class Management', icon: GraduationCap, color: 'bg-purple-50 text-purple-600', path: '/manager/classes' },
     { name: 'Course Management', icon: Library, color: 'bg-indigo-50 text-indigo-600', path: '/manager/courses' },
     { name: 'Department Management', icon: Building, color: 'bg-orange-50 text-orange-600', path: '/manager/departments' },
+    { name: 'Class Schedule', icon: Calendar, color: 'bg-teal-50 text-teal-600', path: '/class-schedule' },
     { name: 'Content Management', icon: Upload, color: 'bg-blue-50 text-blue-600', path: '/subject-content' },
   ] : [
     ...modules,

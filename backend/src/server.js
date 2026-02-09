@@ -3,7 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/database.js';
-import { rateLimitMiddleware, errorHandler } from './core/middleware/guards.js';
+// import { rateLimitMiddleware,errorHandler } from './core/middleware/guards.js';
+import { errorHandler } from './core/middleware/guards.js';
 import { authMiddleware, tenantScopeMiddleware } from './core/middleware/api-guard.js';
 import { runMigrations } from './migrations/migrate.js';
 import authRoutes from './domains/auth/auth-routes.js';
@@ -22,6 +23,7 @@ import academicYearRoutes from './domains/education/academic-year-routes.js';
 import subjectContentRoutes from './domains/education/subject-content-routes.js';
 import tenantRoutes from './domains/admin/tenant-routes.js';
 import dashboardRoutes from './domains/dashboard/dashboard-routes.js';
+import classScheduleRoutes from './domains/education/class-schedule-routes.js';
 
 dotenv.config();
 
@@ -150,7 +152,7 @@ app.post('/test-enrollment', async (req, res) => {
   }
 });
 
-app.use(rateLimitMiddleware);
+// app.use(rateLimitMiddleware);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -175,6 +177,7 @@ app.use('/api/fees', authMiddleware, tenantScopeMiddleware, feeRoutes);
 app.use('/api/classes', authMiddleware, tenantScopeMiddleware, classRoutes);
 app.use('/api/academic-years', authMiddleware, tenantScopeMiddleware, academicYearRoutes);
 app.use('/api/dashboard', authMiddleware, tenantScopeMiddleware, dashboardRoutes);
+app.use('/api/class-schedule', authMiddleware, tenantScopeMiddleware, classScheduleRoutes);
 
 // Super Admin routes (no tenant scope)
 app.use('/api/tenants', authMiddleware, tenantRoutes);

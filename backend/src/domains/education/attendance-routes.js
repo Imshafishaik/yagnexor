@@ -129,24 +129,35 @@ router.get('/teacher/classes', async (req, res) => {
   }
 });
 
-// Get attendance history for a class
+// Get attendance history for a class with enhanced class-wise and date-wise data
 router.get('/class/:class_id/history', async (req, res) => {
   const db = getDatabase();
   const { class_id } = req.params;
   const { date_from, date_to, limit = 30 } = req.query;
 
   try {
+    // First get attendance records with individual student details
     let query = `
-      SELECT ar.attendance_date, COUNT(*) as total_students,
-             SUM(CASE WHEN ar.status = 'PRESENT' THEN 1 ELSE 0 END) as present,
-             SUM(CASE WHEN ar.status = 'ABSENT' THEN 1 ELSE 0 END) as absent,
-             SUM(CASE WHEN ar.status = 'LATE' THEN 1 ELSE 0 END) as late
+      SELECT 
+        ar.attendance_date,
+        ar.student_id,
+        ar.status,
+        ar.remarks,
+        u.first_name,
+        u.last_name,
+        s.roll_number,
+        u.email,
+        s.phone,
+        c.name as class_name
       FROM attendance_records ar
       JOIN students s ON ar.student_id = s.id
+      JOIN users u ON s.user_id = u.id
+      JOIN classes c ON s.class_id = c.id
       WHERE s.class_id = ? AND ar.tenant_id = ?
     `;
+    
     const params = [class_id, req.tenantId];
-
+    
     if (date_from) {
       query += ' AND ar.attendance_date >= ?';
       params.push(date_from);
@@ -155,13 +166,65 @@ router.get('/class/:class_id/history', async (req, res) => {
       query += ' AND ar.attendance_date <= ?';
       params.push(date_to);
     }
-
-    query += ' GROUP BY ar.attendance_date ORDER BY ar.attendance_date DESC LIMIT ?';
-    params.push(parseInt(limit));
+    
+    query += ' ORDER BY ar.attendance_date DESC, s.roll_number';
+    
+    if (limit) {
+      query += ' LIMIT ?';
+      params.push(parseInt(limit));
+    }
 
     const [records] = await db.query(query, params);
 
-    res.json({ attendance_history: records });
+    // Group data by date and include summary statistics
+    const groupedByDate = {};
+    records.forEach(record => {
+      const date = record.attendance_date;
+      if (!groupedByDate[date]) {
+        groupedByDate[date] = {
+          attendance_date: date,
+          class_name: record.class_name,
+          total_students: 0,
+          present: 0,
+          absent: 0,
+          late: 0,
+          excused: 0,
+          students: []
+        };
+      }
+      
+      // Add student details
+      groupedByDate[date].students.push({
+        student_id: record.student_id,
+        student_name: `${record.first_name} ${record.last_name}`,
+        first_name: record.first_name,
+        last_name: record.last_name,
+        roll_number: record.roll_number,
+        email: record.email,
+        phone: record.phone,
+        class_name: record.class_name,
+        status: record.status,
+        remarks: record.remarks
+      });
+      
+      // Update statistics
+      groupedByDate[date].total_students++;
+      if (record.status === 'PRESENT') groupedByDate[date].present++;
+      else if (record.status === 'ABSENT') groupedByDate[date].absent++;
+      else if (record.status === 'LATE') groupedByDate[date].late++;
+      else if (record.status === 'EXCUSED') groupedByDate[date].excused++;
+    });
+
+    res.json({ 
+      attendance_history: Object.values(groupedByDate),
+      summary: {
+        total_dates: Object.keys(groupedByDate).length,
+        date_range: {
+          from: date_from,
+          to: date_to
+        }
+      }
+    });
   } catch (error) {
     console.error('Error fetching attendance history:', error);
     res.status(500).json({ error: 'Failed to fetch attendance history' });

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
-import { Users, Calendar, CheckCircle, XCircle, Clock, Save, History, ChevronLeft } from 'lucide-react';
+import { Users, Calendar, CheckCircle, XCircle, Clock, Save, History, ChevronLeft, ChevronDown, X } from 'lucide-react';
 
 export default function TeacherAttendancePage() {
   const navigate = useNavigate();
@@ -17,6 +17,9 @@ export default function TeacherAttendancePage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('take');
   const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [expandedRecords, setExpandedRecords] = useState({});
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showStudentModal, setShowStudentModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -67,9 +70,14 @@ export default function TeacherAttendancePage() {
     try {
       setLoading(true);
       const response = await api.get(`/attendance/class/${selectedClass}/history?limit=30`);
-      setAttendanceHistory(response.data.attendance_history || []);
+      console.log('API Response:', response.data); // Debug log
+      
+      // Handle current API response format
+      const historyData = response.data.attendance_history;
+      setAttendanceHistory(Array.isArray(historyData) ? historyData : []);
     } catch (error) {
       console.error('Error fetching attendance history:', error);
+      setAttendanceHistory([]);
     } finally {
       setLoading(false);
     }
@@ -131,6 +139,23 @@ export default function TeacherAttendancePage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleRecordExpansion = (index) => {
+    setExpandedRecords(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  const handleStudentClick = (student) => {
+    setSelectedStudent(student);
+    setShowStudentModal(true);
+  };
+
+  const closeStudentModal = () => {
+    setShowStudentModal(false);
+    setSelectedStudent(null);
   };
 
   const getStatusIcon = (status) => {
@@ -357,34 +382,119 @@ export default function TeacherAttendancePage() {
               {attendanceHistory.length > 0 ? (
                 <div className="space-y-4">
                   {attendanceHistory.map((record, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <Calendar className="text-gray-400" size={20} />
-                        <div>
-                          <p className="font-medium text-gray-900">{record.attendance_date}</p>
-                          {record.teacher_remarks && (
-                            <p className="text-sm text-gray-500">{record.teacher_remarks}</p>
-                          )}
+                    <div key={index} className="border border-gray-200 rounded-lg">
+                      <div 
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition"
+                        onClick={() => toggleRecordExpansion(index)}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <Calendar className="text-gray-400" size={20} />
+                          <div className="flex items-center gap-2">
+                            <ChevronDown 
+                              size={16} 
+                              className={`transform transition-transform ${expandedRecords[index] ? 'rotate-180' : ''}`}
+                            />
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {record.attendance_date || new Date(record.date).toLocaleDateString()}
+                              </p>
+                              {record.teacher_remarks && (
+                                <p className="text-sm text-gray-500">{record.teacher_remarks}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-6 text-sm">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span className="text-gray-700">Present: {record.present || 0}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <span className="text-gray-700">Absent: {record.absent || 0}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <span className="text-gray-700">Late: {record.late || 0}</span>
+                          </div>
+                          <div className="text-gray-500">
+                            Total: {record.total_students || (record.students?.length || 0)}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-6 text-sm">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                          <span className="text-gray-700">Present: {record.present}</span>
+                      {/* Expandable Student Details */}
+                      {expandedRecords[index] && (
+                        <div className="p-4 border-t border-gray-200 bg-white">
+                          <h4 className="font-medium text-gray-900 mb-3">Student Details</h4>
+                          <div className="space-y-2">
+                            {record.students && record.students.length > 0 ? (
+                              record.students.map((student) => (
+                                <div key={student.student_id} className="flex items-center justify-between p-3 bg-gray-50 rounded hover:bg-gray-100 transition">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm font-medium text-gray-600">
+                                      {student.roll_number || '-'}
+                                    </span>
+                                    <span 
+                                      className="font-medium cursor-pointer hover:text-blue-600 transition"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStudentClick(student);
+                                      }}
+                                    >
+                                      {student.student_name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      student.status === 'PRESENT' 
+                                        ? 'bg-green-100 text-green-700' 
+                                        : student.status === 'ABSENT'
+                                        ? 'bg-red-100 text-red-700'
+                                        : student.status === 'LATE'
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {student.status}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                      {student.remarks || '-'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-4">
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                  <div className="flex items-center justify-center mb-2">
+                                    <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                      <span className="text-yellow-600 text-sm">⚠️</span>
+                                    </div>
+                                  </div>
+                                  <h5 className="font-medium text-yellow-800 mb-2">Individual Student Details Not Available</h5>
+                                  <p className="text-sm text-yellow-700 mb-3">
+                                    The backend is currently returning summary data instead of detailed student information.
+                                  </p>
+                                  <div className="text-left bg-yellow-100 rounded p-3">
+                                    <p className="text-xs font-medium text-yellow-800 mb-1">Current Data Available:</p>
+                                    <ul className="text-xs text-yellow-700 space-y-1">
+                                      <li>• Date: {record.attendance_date}</li>
+                                      <li>• Total Students: {record.total_students}</li>
+                                      <li>• Present: {record.present}</li>
+                                      <li>• Absent: {record.absent}</li>
+                                      <li>• Late: {record.late}</li>
+                                    </ul>
+                                  </div>
+                                  <p className="text-xs text-yellow-600 mt-3">
+                                    <strong>Solution:</strong> Restart the backend server to load the updated attendance history route that provides individual student details.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                          <span className="text-gray-700">Absent: {record.absent}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                          <span className="text-gray-700">Late: {record.late}</span>
-                        </div>
-                        <div className="text-gray-500">
-                          Total: {record.total_students}
-                        </div>
-                      </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -405,6 +515,71 @@ export default function TeacherAttendancePage() {
           </div>
         )}
       </main>
+
+      {/* Student Details Modal */}
+      {showStudentModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Student Details</h3>
+              <button
+                onClick={closeStudentModal}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Student Name</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {selectedStudent.student_name || `${selectedStudent.first_name} ${selectedStudent.last_name}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Roll Number</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedStudent.roll_number || '-'}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Email</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedStudent.email || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Phone</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedStudent.phone || '-'}</p>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-md font-semibold text-gray-900 mb-3">Current Attendance Status</h4>
+                <div className="flex items-center gap-3">
+                  {getStatusIcon(selectedStudent.status)}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedStudent.status === 'PRESENT' 
+                      ? 'bg-green-100 text-green-700' 
+                      : selectedStudent.status === 'ABSENT'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {selectedStudent.status || 'PRESENT'}
+                  </span>
+                </div>
+                {selectedStudent.remarks && (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-500">Remarks</p>
+                    <p className="text-gray-900">{selectedStudent.remarks}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

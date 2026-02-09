@@ -14,7 +14,7 @@ export async function createSubjectContentTables() {
         description TEXT,
         file_name VARCHAR(255) NOT NULL,
         file_path VARCHAR(500) NOT NULL,
-        file_type VARCHAR(50) NOT NULL,
+        file_type VARCHAR(100) NOT NULL,
         file_size INT NOT NULL,
         uploaded_by VARCHAR(36) NOT NULL,
         is_public BOOLEAN DEFAULT TRUE,
