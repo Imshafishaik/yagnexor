@@ -11,12 +11,27 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - add token
+// Request interceptor - add token and validate before sending
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
+  
+  // Check if token exists and is not expired before making the request
   if (token) {
+    if (isTokenExpired(token)) {
+      console.log('Token expired before request, logging out');
+      // Clear expired tokens and auth state
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      useAuthStore.getState().logout();
+      
+      // Redirect to login immediately
+      window.location.href = '/login';
+      return Promise.reject(new Error('Token expired'));
+    }
+    
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
   console.log('API Request:', config.method?.toUpperCase(), config.url);
   return config;
 });

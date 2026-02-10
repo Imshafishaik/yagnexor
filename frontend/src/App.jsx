@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { useTokenValidation } from './hooks/useTokenValidation';
 import PrivateRoute from './components/PrivateRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -12,7 +13,7 @@ import StudentsPage from './pages/StudentsPage';
 import FacultyPage from './pages/FacultyPage';
 import AttendancePage from './pages/AttendancePage';
 import TeacherAttendancePage from './pages/TeacherAttendancePage';
-import ExamsPage from './pages/ExamsPage';
+import ExamManagementPage from './pages/ExamManagementPage';
 import FeesPage from './pages/FeesPage';
 import UsersPage from './pages/UsersPage';
 import RolesPage from './pages/RolesPage';
@@ -32,6 +33,9 @@ import ClassSchedulePage from './pages/ClassSchedulePage';
 function App() {
   const { checkAuth, user, isAuthenticated } = useAuthStore();
   const [authChecked, setAuthChecked] = useState(false);
+  
+  // Use token validation hook for proactive checking
+  useTokenValidation();
 
   useEffect(() => {
     console.log("App useEffect - checking auth...");
@@ -182,7 +186,7 @@ function App() {
         />
         <Route
           path="/exams"
-          element={isAuthenticated ? <PrivateRoute><ExamsPage /></PrivateRoute> : <Navigate to="/login" replace />}
+          element={isAuthenticated ? <PrivateRoute><ExamManagementPage /></PrivateRoute> : <Navigate to="/login" replace />}
         />
         <Route
           path="/fees"

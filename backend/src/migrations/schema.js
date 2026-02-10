@@ -208,6 +208,7 @@ export const migrations = [
         exam_date DATE,
         exam_time TIME,
         duration_minutes INT,
+        instructions TEXT,
         is_published BOOLEAN DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (tenant_id) REFERENCES tenants(id),

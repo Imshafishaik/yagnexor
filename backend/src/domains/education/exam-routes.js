@@ -17,7 +17,7 @@ const createExamSchema = Joi.object({
   exam_date: Joi.date().required(),
   exam_time: Joi.string().required(),
   duration_minutes: Joi.number().integer().min(1).required(),
-  instructions: Joi.string().optional(),
+  instructions: Joi.string().allow('').optional(),
 });
 
 const updateExamSchema = Joi.object({
@@ -30,7 +30,7 @@ const updateExamSchema = Joi.object({
   exam_date: Joi.date().optional(),
   exam_time: Joi.string().optional(),
   duration_minutes: Joi.number().integer().min(1).optional(),
-  instructions: Joi.string().optional(),
+  instructions: Joi.string().allow('').optional(),
   is_published: Joi.boolean().optional(),
 });
 
@@ -127,6 +127,10 @@ router.post('/', validateRequest(createExamSchema), async (req, res) => {
   const db = getDatabase();
   const { subject_id, class_id, academic_year_id, name, exam_type, total_marks, exam_date, exam_time, duration_minutes, instructions } = req.validatedBody;
   
+  console.log('Creating exam with data:', {
+    subject_id, class_id, academic_year_id, name, exam_type, total_marks, exam_date, exam_time, duration_minutes, instructions
+  });
+  
   try {
     const examId = uuidv4();
     await db.query(
@@ -141,7 +145,13 @@ router.post('/', validateRequest(createExamSchema), async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating exam:', error);
-    res.status(500).json({ error: 'Failed to create exam' });
+    console.error('Error details:', {
+      code: error.code,
+      errno: error.errno,
+      sqlMessage: error.sqlMessage,
+      sqlState: error.sqlState
+    });
+    res.status(500).json({ error: 'Failed to create exam', details: error.message });
   }
 });
 

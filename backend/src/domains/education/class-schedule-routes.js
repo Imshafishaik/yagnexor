@@ -11,7 +11,8 @@ const createScheduleSchema = Joi.object({
   class_id: Joi.string().required(),
   subject_id: Joi.string().required(),
   teacher_id: Joi.string().required(),
-  day_of_week: Joi.string().valid('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY').required(),
+  day_of_week: Joi.string().valid('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY').optional(),
+  schedule_date: Joi.date().optional(),
   start_time: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required(),
   end_time: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required(),
   room_number: Joi.string().optional(),
@@ -24,6 +25,7 @@ const updateScheduleSchema = Joi.object({
   subject_id: Joi.string().optional(),
   teacher_id: Joi.string().optional(),
   day_of_week: Joi.string().valid('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY').optional(),
+  schedule_date: Joi.date().optional(),
   start_time: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
   end_time: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
   room_number: Joi.string().optional(),
@@ -194,25 +196,66 @@ router.get('/teacher/:teacher_id', async (req, res) => {
 router.post('/', validateRequest(createScheduleSchema), async (req, res) => {
   const db = getDatabase();
   try {
-    const { class_id, subject_id, teacher_id, day_of_week, start_time, end_time, room_number, semester, academic_year, notes } = req.validatedBody;
+    const { class_id, subject_id, teacher_id, day_of_week, schedule_date, start_time, end_time, room_number, semester, academic_year, notes } = req.validatedBody;
     
-    // Check for time conflicts
-    const [conflicts] = await db.query(`
-      SELECT id FROM class_schedules 
-      WHERE tenant_id = ? AND class_id = ? AND day_of_week = ? AND is_active = TRUE
-      AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))
-    `, [req.tenantId, class_id, day_of_week, start_time, start_time, end_time, end_time]);
+    // Validate that either day_of_week or schedule_date is provided
+    if (!day_of_week && !schedule_date) {
+      return res.status(400).json({ error: 'Either day_of_week or schedule_date is required' });
+    }
+    
+    if (day_of_week && schedule_date) {
+      return res.status(400).json({ error: 'Cannot specify both day_of_week and schedule_date' });
+    }
+    
+    // Check for time conflicts based on schedule type
+    let conflictQuery, conflictParams;
+    
+    if (day_of_week) {
+      // Recurring schedule conflict check
+      conflictQuery = `
+        SELECT id FROM class_schedules 
+        WHERE tenant_id = ? AND class_id = ? AND day_of_week = ? AND is_active = TRUE
+        AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))
+      `;
+      conflictParams = [req.tenantId, class_id, day_of_week, start_time, start_time, end_time, end_time];
+    } else {
+      // Specific date schedule conflict check
+      conflictQuery = `
+        SELECT id FROM class_schedules 
+        WHERE tenant_id = ? AND class_id = ? AND schedule_date = ? AND is_active = TRUE
+        AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))
+      `;
+      conflictParams = [req.tenantId, class_id, schedule_date, start_time, start_time, end_time, end_time];
+    }
+    
+    const [conflicts] = await db.query(conflictQuery, conflictParams);
     
     if (conflicts.length > 0) {
       return res.status(400).json({ error: 'Schedule conflicts with existing class time' });
     }
     
-    // Check teacher availability
-    const [teacherConflicts] = await db.query(`
-      SELECT id FROM class_schedules 
-      WHERE tenant_id = ? AND teacher_id = ? AND day_of_week = ? AND is_active = TRUE
-      AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))
-    `, [req.tenantId, teacher_id, day_of_week, start_time, start_time, end_time, end_time]);
+    // Check teacher availability based on schedule type
+    let teacherConflictQuery, teacherConflictParams;
+    
+    if (day_of_week) {
+      // Recurring schedule teacher conflict check
+      teacherConflictQuery = `
+        SELECT id FROM class_schedules 
+        WHERE tenant_id = ? AND teacher_id = ? AND day_of_week = ? AND is_active = TRUE
+        AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))
+      `;
+      teacherConflictParams = [req.tenantId, teacher_id, day_of_week, start_time, start_time, end_time, end_time];
+    } else {
+      // Specific date schedule teacher conflict check
+      teacherConflictQuery = `
+        SELECT id FROM class_schedules 
+        WHERE tenant_id = ? AND teacher_id = ? AND schedule_date = ? AND is_active = TRUE
+        AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))
+      `;
+      teacherConflictParams = [req.tenantId, teacher_id, schedule_date, start_time, start_time, end_time, end_time];
+    }
+    
+    const [teacherConflicts] = await db.query(teacherConflictQuery, teacherConflictParams);
     
     if (teacherConflicts.length > 0) {
       return res.status(400).json({ error: 'Teacher is already scheduled at this time' });
@@ -222,9 +265,9 @@ router.post('/', validateRequest(createScheduleSchema), async (req, res) => {
     
     await db.query(`
       INSERT INTO class_schedules 
-      (id, tenant_id, class_id, subject_id, teacher_id, day_of_week, start_time, end_time, room_number, semester, academic_year, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [scheduleId, req.tenantId, class_id, subject_id, teacher_id, day_of_week, start_time, end_time, room_number, semester, academic_year, notes]);
+      (id, tenant_id, class_id, subject_id, teacher_id, day_of_week, schedule_date, start_time, end_time, room_number, semester, academic_year, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [scheduleId, req.tenantId, class_id, subject_id, teacher_id, day_of_week, schedule_date, start_time, end_time, room_number, semester, academic_year, notes]);
     
     res.status(201).json({
       message: 'Schedule created successfully',

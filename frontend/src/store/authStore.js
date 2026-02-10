@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import api from '../services/api';
+import { isTokenExpired } from '../utils/tokenUtils';
 
 export const useAuthStore = create(
   persist(
@@ -151,7 +152,20 @@ export const useAuthStore = create(
     console.log("checkAuth - token:", token);
 
     if (token) {
-      // If we have a token, check if we have persisted user state
+      // Check if token is expired
+      if (isTokenExpired(token)) {
+        console.log("Token is expired, logging out user");
+        // Clear expired tokens and auth state
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        set({
+          user: null,
+          isAuthenticated: false,
+        });
+        return null;
+      }
+
+      // If we have a valid token, check if we have persisted user state
       const currentState = useAuthStore.getState();
       console.log("checkAuth - current state user:", currentState.user);
       console.log("checkAuth - current state isAuthenticated:", currentState.isAuthenticated);
